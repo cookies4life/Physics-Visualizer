@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Physics Simulator Menu</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Physics Visualizer</p>
+        <h1>Choose a simulation module</h1>
+        <p class="subtitle">Launch interactive simulators for classical, quantum, relativistic, and statistical physics.</p>
+      </div>
+      <div class="hero-graphic">
+        <span>⨀</span>
+        <span>⚛</span>
+        <span>📈</span>
+        <span>🧲</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="module-grid">
+        <button class="module-card" data-module="classical">
+          <h2>Classical Mechanics</h2>
+          <p>Study motion, forces, energy, and trajectories.</p>
+        </button>
+
+        <button class="module-card" data-module="quantum">
+          <h2>Quantum Mechanics</h2>
+          <p>Explore wave functions, superposition, and uncertainty.</p>
+        </button>
+
+        <button class="module-card" data-module="relativistic">
+          <h2>Relativistic Mechanics</h2>
+          <p>See time dilation, length contraction, and high-speed motion.</p>
+        </button>
+
+        <button class="module-card" data-module="statistical">
+          <h2>Statistical Mechanics</h2>
+          <p>Visualize temperature, entropy, and particle ensembles.</p>
+        </button>
+      </section>
+
+      <section class="preview-panel">
+        <div id="previewCard" class="preview-card">
+          <h2>Module preview</h2>
+          <p id="previewText">Select a module to see its description and launch it.</p>
+          <div class="preview-actions">
+            <button id="launchButton" class="launch-button" disabled>Launch module</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
