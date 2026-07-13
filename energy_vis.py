@@ -110,6 +110,17 @@ def open_energy_window(master=None):
             width = max(200, win.winfo_width() - 20)
         return max(40, int(width / 2))
 
+    equation_frame = ttk.Frame(frm, padding=8)
+    equation_frame.pack(fill=tk.X, padx=8, pady=(0, 6))
+    equation_frame['borderwidth'] = 1
+    equation_frame['relief'] = 'solid'
+
+    ttk.Label(equation_frame, text="Physics equations", font=(None, 10, 'bold')).pack(anchor='w')
+    ttk.Label(equation_frame, text="Hooke's law: F = -k x  → the spring pulls back with a force proportional to displacement.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
+    ttk.Label(equation_frame, text="Newton's 2nd law: F = m a  → the force causes the mass to accelerate.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
+    ttk.Label(equation_frame, text="Elastic potential energy: U = 1/2 k x²  → energy stored in the stretched or compressed spring.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
+    ttk.Label(equation_frame, text="Kinetic energy: K = 1/2 m v²  → energy of motion as the mass moves.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
+
     help_text = ttk.Label(frm, text="The spring coil shows the mass stretching and compressing over time. The two curves below are energy traces: blue is kinetic energy and orange is potential energy stored in the spring.", wraplength=760, justify=tk.LEFT)
     help_text.pack(anchor='w', padx=8, pady=(4, 6))
 
