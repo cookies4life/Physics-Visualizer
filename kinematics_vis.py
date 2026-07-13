@@ -17,21 +17,36 @@ def open_kinematics_window(master=None):
     controls = ttk.Frame(win, padding=8)
     controls.pack(side=tk.LEFT, fill=tk.Y)
 
-    # Main animation canvas (larger)
+    # Main animation canvas (larger) with title
     canvas_w, canvas_h = 800, 560
-    canvas = tk.Canvas(win, bg="white", width=canvas_w, height=canvas_h)
-    canvas.pack(side=tk.LEFT, padx=8, pady=8)
+    anim_frame = ttk.Frame(win)
+    anim_frame.pack(side=tk.LEFT, padx=8, pady=8)
+    ttk.Label(anim_frame, text='Animation — Projectile Motion', font=(None, 12, 'bold')).pack()
+    canvas = tk.Canvas(anim_frame, bg="white", width=canvas_w, height=canvas_h)
+    canvas.pack()
 
     # Graphs canvas (x(t), v(t), a(t)) stacked vertically
     graphs_frame = ttk.Frame(win)
     graphs_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=8, pady=8)
 
-    graph_xt = tk.Canvas(graphs_frame, bg='white', height=140)
-    graph_vt = tk.Canvas(graphs_frame, bg='white', height=140)
-    graph_at = tk.Canvas(graphs_frame, bg='white', height=140)
+    # Each graph gets a titled frame
+    g1 = ttk.Frame(graphs_frame)
+    ttk.Label(g1, text='x(t) — Distance vs Time', font=(None, 11, 'bold')).pack(anchor='w')
+    graph_xt = tk.Canvas(g1, bg='white', height=140)
     graph_xt.pack(fill=tk.BOTH, expand=True)
+    g1.pack(fill=tk.BOTH, expand=True)
+
+    g2 = ttk.Frame(graphs_frame)
+    ttk.Label(g2, text='|v|(t) — Speed vs Time', font=(None, 11, 'bold')).pack(anchor='w')
+    graph_vt = tk.Canvas(g2, bg='white', height=140)
     graph_vt.pack(fill=tk.BOTH, expand=True)
+    g2.pack(fill=tk.BOTH, expand=True)
+
+    g3 = ttk.Frame(graphs_frame)
+    ttk.Label(g3, text='|a|(t) — Acceleration vs Time', font=(None, 11, 'bold')).pack(anchor='w')
+    graph_at = tk.Canvas(g3, bg='white', height=140)
     graph_at.pack(fill=tk.BOTH, expand=True)
+    g3.pack(fill=tk.BOTH, expand=True)
 
     # Parameters
     initial_speed = tk.DoubleVar(value=40.0)
