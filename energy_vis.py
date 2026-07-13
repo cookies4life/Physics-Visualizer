@@ -8,6 +8,12 @@ def open_energy_window(master=None):
     win.title("Work, Energy & Power — Mass-Spring Demo")
     win.geometry("800x360")
 
+    # Header and description
+    header = ttk.Frame(win)
+    header.pack(fill=tk.X)
+    ttk.Label(header, text="Work, Energy & Power — Mass-Spring Demo", font=(None, 16, 'bold')).pack(anchor='n')
+    ttk.Label(header, text="Animated mass-spring system showing kinetic and potential energies (in joules) over time.", wraplength=780).pack(anchor='n')
+
     frm = ttk.Frame(win, padding=8)
     frm.pack(fill=tk.BOTH, expand=True)
 
@@ -76,6 +82,16 @@ def open_energy_window(master=None):
         pad = 6
         tmax = max(0.1, t[-1])
         vmax = max(max(ke) if ke else 1, max(pe) if pe else 1)
+        # draw axes with metric ticks
+        graph.create_line(pad, h-pad, w-pad, h-pad, fill='black')
+        graph.create_line(pad, pad, pad, h-pad, fill='black')
+        # y ticks and labels (energy in J)
+        for i in range(5):
+            yy = pad + i*(h-2*pad)/4
+            val = vmax - (i*(vmax/4))
+            graph.create_line(pad-5, int(yy), pad, int(yy), fill='black')
+            graph.create_text(pad-30, int(yy), text=f"{val:.2f}")
+        # plot curves
         for arr, color in ((ke,'blue'), (pe,'orange')):
             for i in range(1, len(arr)):
                 x1 = int(pad + (t[i-1]/tmax)*(w-2*pad))
@@ -84,6 +100,8 @@ def open_energy_window(master=None):
                 y2 = int(h-pad - (arr[i]/vmax)*(h-2*pad))
                 graph.create_line(x1,y1,x2,y2, fill=color)
         graph.create_text(10,10, anchor='nw', text='KE (blue)  PE (orange)')
+        graph.create_text(pad-20, h//2, text='Energy (J)', angle=90)
+        graph.create_text(w//2, h-pad+12, text='time (s)')
 
     ttk.Button(frm, text='Reset', command=reset).pack(side=tk.LEFT, padx=6)
     ttk.Button(frm, text='Start', command=step).pack(side=tk.LEFT)

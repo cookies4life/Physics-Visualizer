@@ -8,6 +8,11 @@ def open_rotation_window(master=None):
     win.title("Rotational Motion — Spinning Disk")
     win.geometry("700x420")
 
+    header = ttk.Frame(win)
+    header.pack(fill=tk.X)
+    ttk.Label(header, text="Rotational Motion — Spinning Disk", font=(None, 16, 'bold')).pack(anchor='n')
+    ttk.Label(header, text="Shows angular acceleration from applied torque, angular velocity, angular momentum and rotational kinetic energy (J).", wraplength=680).pack(anchor='n')
+
     frm = ttk.Frame(win, padding=8)
     frm.pack(fill=tk.BOTH, expand=True)
 
@@ -61,7 +66,7 @@ def open_rotation_window(master=None):
         canvas.create_line(cx+pix_r+20, cy, cx+pix_r+80, cy, arrow='last', fill='purple', width=3)
         canvas.create_text(10, 10, anchor='nw', text=f"ω={state['omega']:.2f} rad/s  α={alpha:.2f} rad/s²  I={I:.2f} kg·m²  L={I*state['omega']:.2f}")
 
-        # small energy plot
+        # small energy plot with metric ticks
         gx, gy = 10, 300
         gw, gh = 300, 80
         # draw border
@@ -69,12 +74,20 @@ def open_rotation_window(master=None):
         if energy_hist['t']:
             tmax = max(0.1, energy_hist['t'][-1])
             vmax = max(energy_hist['rot']) if energy_hist['rot'] else 1
+            # y ticks
+            for i in range(5):
+                yy = gy + int(i*(gh/4))
+                val = vmax - (i*(vmax/4))
+                canvas.create_line(gx-5, yy, gx, yy, fill='black')
+                canvas.create_text(gx-30, yy, text=f"{val:.2f}")
             for i in range(1, len(energy_hist['rot'])):
                 x1 = gx + int((energy_hist['t'][i-1]/tmax)*(gw))
                 x2 = gx + int((energy_hist['t'][i]/tmax)*(gw))
                 y1 = gy+gh - int((energy_hist['rot'][i-1]/vmax)*gh)
                 y2 = gy+gh - int((energy_hist['rot'][i]/vmax)*gh)
                 canvas.create_line(x1,y1,x2,y2, fill='blue')
+            canvas.create_text(gx+gw//2, gy+gh+12, text='time (s)')
+            canvas.create_text(gx-20, gy+gh//2, text='Energy (J)', angle=90)
 
         win.after(int(dt*1000), step)
 

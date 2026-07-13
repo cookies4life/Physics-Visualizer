@@ -8,6 +8,12 @@ def open_newton_window(master=None):
     win.title("Newton's Laws — Force Visualizer")
     win.geometry("900x380")
 
+    # Header and description
+    header = ttk.Frame(win)
+    header.pack(fill=tk.X)
+    ttk.Label(header, text="Newton's Laws — Force Visualizer", font=(None, 16, 'bold')).pack(anchor='n')
+    ttk.Label(header, text="Interactive demonstration of forces on a block: applied force, friction, weight and normal force. Toggle force vectors and friction.", wraplength=880).pack(anchor='n')
+
     frm = ttk.Frame(win, padding=8)
     frm.pack(fill=tk.BOTH, expand=True)
 
