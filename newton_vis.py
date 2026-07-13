@@ -55,7 +55,7 @@ def open_incline_window(master=None):
     ttk.Label(frm, textvariable=mu_display).grid(row=3, column=2)
 
     ttk.Label(frm, text="Incline angle (deg)").grid(row=4, column=0, sticky='w')
-    ttk.Scale(frm, from_=0, to=45, variable=incline_angle, orient=tk.HORIZONTAL).grid(row=4, column=1, sticky='we')
+    ttk.Scale(frm, from_=-45, to=45, variable=incline_angle, orient=tk.HORIZONTAL).grid(row=4, column=1, sticky='we')
     ttk.Label(frm, textvariable=angle_display).grid(row=4, column=2)
 
     ttk.Checkbutton(frm, text="Show force vectors", variable=show_forces).grid(row=5, column=0, columnspan=3, sticky='w')
@@ -89,7 +89,7 @@ def open_incline_window(master=None):
         if dx <= 20:
             dx = 20
         angle_rad = math.atan2(dy, dx)
-        angle_deg = max(5.0, min(45.0, math.degrees(angle_rad)))
+        angle_deg = max(-45.0, min(45.0, math.degrees(angle_rad)))
         incline_angle.set(angle_deg)
         draw_plot(0, 0, 0, 0)
 
@@ -113,64 +113,72 @@ def open_incline_window(master=None):
         y2 = base_y - length * math.sin(angle)
         canvas.create_line(base_x, base_y, x2, y2, fill='sienna', width=4)
         canvas.create_line(base_x, base_y, x2, base_y, fill='black', dash=(4, 2))
-        canvas.create_oval(x2-8, y2-8, x2+8, y2+8, fill='blue', outline='black')
-        canvas.create_text(x2+15, y2-10, text='Drag handle', anchor='w', fill='black', font=(None, 8))
 
-        state['top'] = (x2, y2)
+        top_x, top_y, bottom_x, bottom_y = (x2, y2, base_x, base_y) if y2 < base_y else (base_x, base_y, x2, y2)
+        canvas.create_oval(top_x-8, top_y-8, top_x+8, top_y+8, fill='blue', outline='black')
+        canvas.create_text(top_x+15, top_y-10, text='Drag handle', anchor='w', fill='black', font=(None, 8))
+        state['top'] = (top_x, top_y)
 
-        block_x = base_x + state['s'] * 8 * math.cos(angle)
-        block_y = base_y - state['s'] * 8 * math.sin(angle)
-        block_w = 50
-        block_h = 30
-        dx = block_w * math.cos(angle)
-        dy = block_w * math.sin(angle)
-        tx = block_h * math.sin(angle)
-        ty = block_h * math.cos(angle)
-        p1 = (block_x - dx/2 + ty/2, block_y - dy/2 - tx/2)
-        p2 = (block_x + dx/2 + ty/2, block_y + dy/2 - tx/2)
-        p3 = (block_x + dx/2 - ty/2, block_y + dy/2 + tx/2)
-        p4 = (block_x - dx/2 - ty/2, block_y - dy/2 + tx/2)
-        canvas.create_polygon(p1, p2, p3, p4, fill='gray')
-        canvas.create_text(block_x, block_y, text=f"m={mass.get():.2f} kg", fill='white')
+        dx = bottom_x - top_x
+        dy = bottom_y - top_y
+        incline_length = math.hypot(dx, dy)
+        dir_x = dx / incline_length
+        dir_y = dy / incline_length
+        normal_x = -dir_y
+        normal_y = dir_x
+
+        block_x = top_x + state['s'] * dir_x
+        block_y = top_y + state['s'] * dir_y
+        box_w = 80
+        box_h = 45
+        box_cx = block_x + normal_x * (box_h / 2 + 4)
+        box_cy = block_y + normal_y * (box_h / 2 + 4)
+        canvas.create_rectangle(
+            box_cx - box_w / 2,
+            box_cy - box_h / 2,
+            box_cx + box_w / 2,
+            box_cy + box_h / 2,
+            fill='gray', outline='black')
+        canvas.create_text(box_cx, box_cy, text=f"m={mass.get():.2f} kg", fill='white')
 
         g_val = 9.81
-        g_par = mass.get() * g_val * math.sin(angle)
-        g_perp = mass.get() * g_val * math.cos(angle)
+        g_par = mass.get() * g_val * abs(math.sin(angle))
+        g_perp = mass.get() * g_val * math.cos(abs(angle))
 
         if show_weight.get():
-            wx, wy = block_x, block_y
-            wy2 = wy + 80
-            canvas.create_line(wx, wy, wx, wy2, arrow='last', fill='black', width=2)
-            canvas.create_text(wx-25, wy2+10, text=f"W={mass.get()*g_val:.2f} N")
+            wx = box_cx
+            wy = box_cy
+            canvas.create_line(wx, wy, wx, wy + 80, arrow='last', fill='black', width=2)
+            canvas.create_text(wx - 25, wy + 90, text=f"W={mass.get()*g_val:.2f} N")
 
         if show_normal.get():
-            nx = block_x - math.sin(angle) * 60
-            ny = block_y - math.cos(angle) * 60
-            canvas.create_line(block_x, block_y, nx, ny, arrow='last', fill='green', width=2)
-            canvas.create_text(nx-10, ny-10, text=f"mg cosθ={g_perp:.2f} N")
+            nx = box_cx + normal_x * 60
+            ny = box_cy + normal_y * 60
+            canvas.create_line(box_cx, box_cy, nx, ny, arrow='last', fill='green', width=2)
+            canvas.create_text(nx + 10, ny - 5, text=f"mg cosθ={g_perp:.2f} N")
 
         if show_friction.get() and friction_on.get():
-            fg = friction_mu.get() * g_perp
+            friction_mag = friction_mu.get() * g_perp
             direction = -1 if state['v'] > 0 else 1
             if abs(state['v']) < 1e-3 and ax < 0:
                 direction = 1
-            fx = block_x + direction * math.cos(angle) * 70
-            fy = block_y + direction * math.sin(angle) * 70
-            fx2 = fx - direction * math.sin(angle) * 50
-            fy2 = fy + direction * math.cos(angle) * 50
+            fx = box_cx + direction * dir_x * 70
+            fy = box_cy + direction * dir_y * 70
+            fx2 = fx - direction * normal_x * 50
+            fy2 = fy - direction * normal_y * 50
             canvas.create_line(fx, fy, fx2, fy2, arrow='last', fill='brown', width=2)
-            canvas.create_text(fx2-10, fy2+10, text=f"F_fric={fg:.2f} N")
+            canvas.create_text(fx2 - 10, fy2 + 10, text=f"F_fric={friction_mag:.2f} N")
 
         if show_forces.get():
-            frx = block_x + math.cos(angle) * 70
-            fry = block_y + math.sin(angle) * 70
-            canvas.create_line(block_x, block_y, frx, fry, arrow='last', fill='blue', width=3)
-            canvas.create_text(frx+15, fry+15, text=f"F={force.get():.2f} N")
+            frx = box_cx + dir_x * 70
+            fry = box_cy + dir_y * 70
+            canvas.create_line(box_cx, box_cy, frx, fry, arrow='last', fill='blue', width=3)
+            canvas.create_text(frx + 15, fry + 15, text=f"F={force.get():.2f} N")
 
-        cgx = block_x + math.cos(angle) * 60
-        cgy = block_y + math.sin(angle) * 60
-        canvas.create_line(block_x, block_y, cgx, cgy, arrow='last', fill='orange', width=2)
-        canvas.create_text(cgx+10, cgy+10, text=f"mg sinθ={g_par:.2f} N", fill='orange')
+        cgx = box_cx + dir_x * 60
+        cgy = box_cy + dir_y * 60
+        canvas.create_line(box_cx, box_cy, cgx, cgy, arrow='last', fill='orange', width=2)
+        canvas.create_text(cgx + 10, cgy + 10, text=f"mg sinθ={g_par:.2f} N", fill='orange')
 
         canvas.create_text(10, 10, anchor='nw', text=f"vx={state['v']:.2f} m/s   s={state['s']:.2f} m   θ={incline_angle.get():.2f}°")
 
@@ -179,22 +187,27 @@ def open_incline_window(master=None):
         F = force.get()
         angle = math.radians(incline_angle.get())
         g = 9.81
-        N = m * g * math.cos(angle)
-        g_par = m * g * math.sin(angle)
+        g_par = m * g * abs(math.sin(angle))
+        N = m * g * math.cos(abs(angle))
         mu = friction_mu.get() if friction_on.get() else 0.0
         friction_mag = mu * N
-        direction = -1 if state['v'] > 0 else 1
-        if abs(state['v']) < 1e-3 and abs(F - g_par) < friction_mag:
+        net_force_down = F + g_par
+        if abs(state['v']) < 1e-3 and abs(net_force_down) < friction_mag:
             a = 0.0
+            friction = 0.0
         else:
+            direction = math.copysign(1.0, state['v']) if abs(state['v']) > 1e-3 else math.copysign(1.0, net_force_down)
             friction = -direction * friction_mag if friction_on.get() else 0.0
-            if direction * (F - g_par) < 0:
-                friction = -direction * friction_mag
-            a = (F - g_par + friction) / m
+            a = (net_force_down + friction) / m
         state['v'] += a * 0.03
         state['s'] += state['v'] * 0.03
-        if state['s'] < 0:
-            state['s'] = 0
+        max_s = 520 + 80
+        min_s = -80
+        if state['s'] < min_s:
+            state['s'] = min_s
+            state['v'] = 0
+        elif state['s'] > max_s:
+            state['s'] = max_s
             state['v'] = 0
         draw_plot(a, g_par, N, friction_mag)
         if running['on']:
