@@ -71,8 +71,11 @@ def open_energy_window(master=None):
     _update_b_display()
     ttk.Label(control, textvariable=b_display).pack(side=tk.LEFT, padx=8)
 
-    canvas = tk.Canvas(frm, bg='white', height=300)
-    canvas.pack(fill=tk.BOTH, expand=True, pady=8)
+    canvas = tk.Canvas(frm, bg='white', height=260)
+    canvas.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
+
+    help_text = ttk.Label(frm, text="The wave-like spring shape shows how the mass stretches and compresses the spring over time; it is a visual of stored elastic energy.", wraplength=760, justify=tk.LEFT)
+    help_text.pack(anchor='w', padx=8, pady=(4, 6))
 
     graph = tk.Canvas(frm, bg='white', height=100)
     graph.pack(fill=tk.BOTH)
