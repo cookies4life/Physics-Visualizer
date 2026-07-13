@@ -21,20 +21,38 @@ def open_energy_window(master=None):
     k = tk.DoubleVar(value=50.0)
     x0 = tk.DoubleVar(value=0.5)
 
+    def _format_two_decimals(var):
+        return f"{var.get():.2f}"
+
     control = ttk.Frame(frm)
     control.pack(fill=tk.X)
+
+    mass_display = tk.StringVar()
+    k_display = tk.StringVar()
+    x0_display = tk.StringVar()
+
+    def _update_value_display(*_args):
+        mass_display.set(_format_two_decimals(mass))
+        k_display.set(_format_two_decimals(k))
+        x0_display.set(_format_two_decimals(x0))
+
+    mass.trace_add("write", _update_value_display)
+    k.trace_add("write", _update_value_display)
+    x0.trace_add("write", _update_value_display)
+    _update_value_display()
+
     ttk.Label(control, text='Mass (kg)').pack(side=tk.LEFT)
     ttk.Scale(control, from_=0.1, to=10, variable=mass, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=mass).pack(side=tk.LEFT, padx=8)
+    ttk.Label(control, textvariable=mass_display).pack(side=tk.LEFT, padx=8)
 
     ttk.Label(control, text='k (N/m)').pack(side=tk.LEFT, padx=(10,0))
     ttk.Scale(control, from_=1, to=500, variable=k, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=k).pack(side=tk.LEFT, padx=8)
+    ttk.Label(control, textvariable=k_display).pack(side=tk.LEFT, padx=8)
     
     # initial displacement control
     ttk.Label(control, text='x0 (m)').pack(side=tk.LEFT, padx=(10,0))
     ttk.Scale(control, from_=-2.0, to=2.0, variable=x0, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=x0).pack(side=tk.LEFT, padx=8)
+    ttk.Label(control, textvariable=x0_display).pack(side=tk.LEFT, padx=8)
     
     # Gravity and air resistance controls
     gravity = tk.BooleanVar(value=False)
@@ -44,19 +62,12 @@ def open_energy_window(master=None):
     ttk.Checkbutton(control, text='Air Resist', variable=air).pack(side=tk.LEFT, padx=(6,0))
     ttk.Label(control, text='damping b').pack(side=tk.LEFT, padx=(6,0))
     ttk.Scale(control, from_=0.0, to=50.0, variable=b, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=b).pack(side=tk.LEFT, padx=8)
-
-    def _format_two_decimals(var):
-        return f"{var.get():.2f}"
-
-    b_trace_id = None
-    def _update_b_display(*_args):
-        nonlocal b_trace_id
-        if b_trace_id is None:
-            b_trace_id = b.trace_add("write", _update_b_display)
-        b_display.set(_format_two_decimals(b))
 
     b_display = tk.StringVar()
+    def _update_b_display(*_args):
+        b_display.set(_format_two_decimals(b))
+
+    b.trace_add("write", _update_b_display)
     _update_b_display()
     ttk.Label(control, textvariable=b_display).pack(side=tk.LEFT, padx=8)
 
