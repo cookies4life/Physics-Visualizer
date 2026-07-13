@@ -132,10 +132,10 @@ def open_energy_window(master=None):
         m = mass.get(); kk = k.get()
         dt = 0.02
         g = 9.81 if gravity.get() else 0.0
-        bv = b.get() if air.get() else 0.0
+        damping = b.get() if b.get() > 0 else 0.0
 
         # acceleration: m a = -k x - b v + m g
-        a = (-kk * state['x'] - bv * state['v'] + m * g) / m
+        a = (-kk * state['x'] - damping * state['v'] + m * g) / m
         state['v'] += a * dt
         state['x'] += state['v'] * dt
 
