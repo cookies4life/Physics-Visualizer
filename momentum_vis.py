@@ -11,7 +11,11 @@ def open_momentum_window(master=None):
     header = ttk.Frame(win)
     header.pack(fill=tk.X)
     ttk.Label(header, text="Momentum & Collisions — 1D Collision", font=(None, 16, 'bold')).pack(anchor='n')
-    ttk.Label(header, text="Animated 1D collision showing conservation of momentum. Velocities shown are in m/s; positions are in pixels for visualization.", wraplength=980).pack(anchor='n')
+    ttk.Label(
+        header,
+        text="Animated 1D collision showing conservation of momentum. Velocities shown are in m/s; positions are in pixels for visualization.",
+        wraplength=980,
+    ).pack(anchor='n')
 
     frm = ttk.Frame(win, padding=8)
     frm.pack(fill=tk.BOTH, expand=True)
@@ -25,11 +29,18 @@ def open_momentum_window(master=None):
     def _bind_display(var, display_var):
         def _update(*_args):
             display_var.set(f"{var.get():.2f}")
+
         var.trace_add("write", _update)
         _update()
 
-    m1_display = tk.StringVar(); v1_display = tk.StringVar(); m2_display = tk.StringVar(); v2_display = tk.StringVar()
-    _bind_display(m1, m1_display); _bind_display(v1, v1_display); _bind_display(m2, m2_display); _bind_display(v2, v2_display)
+    m1_display = tk.StringVar()
+    v1_display = tk.StringVar()
+    m2_display = tk.StringVar()
+    v2_display = tk.StringVar()
+    _bind_display(m1, m1_display)
+    _bind_display(v1, v1_display)
+    _bind_display(m2, m2_display)
+    _bind_display(v2, v2_display)
 
     control = ttk.Frame(frm)
     control.pack(fill=tk.X)
@@ -51,15 +62,39 @@ def open_momentum_window(master=None):
     canvas.pack(fill=tk.BOTH, expand=True, pady=8)
 
     # positions in pixels
-    state = {'x1': 120.0, 'x2': 740.0, 'v1': v1.get(), 'v2': v2.get(), 'running': False}
+    # Note: box widths are dynamic based on mass.
+    state = {
+        'x1': 120.0,  # left edge for box 1
+        'x2': 740.0,  # left edge for box 2
+        'v1': v1.get(),
+        'v2': v2.get(),
+        'running': False,
+    }
+
+    def box_size(mass_value: float) -> tuple[float, float]:
+        """Return (w, h) in pixels.
+
+        User request: scale TOTAL size (width + height), not just width.
+        """
+        m = float(mass_value)
+        # Map mass (0.1..20) -> size range in px.
+        # width: 30..110, height: 30..90
+        w = 30.0 + (m / 20.0) * 80.0
+        h = 30.0 + (m / 20.0) * 60.0
+        return w, h
+
+
 
     def compute_after_vels():
-        M1 = m1.get(); V1 = state['v1']; M2 = m2.get(); V2 = state['v2']
+        M1 = m1.get()
+        V1 = state['v1']
+        M2 = m2.get()
+        V2 = state['v2']
         if elastic.get():
-            u1 = (V1*(M1-M2) + 2*M2*V2) / (M1+M2)
-            u2 = (V2*(M2-M1) + 2*M1*V1) / (M1+M2)
+            u1 = (V1 * (M1 - M2) + 2 * M2 * V2) / (M1 + M2)
+            u2 = (V2 * (M2 - M1) + 2 * M1 * V1) / (M1 + M2)
         else:
-            u = (M1*V1 + M2*V2) / (M1+M2)
+            u = (M1 * V1 + M2 * V2) / (M1 + M2)
             u1 = u2 = u
         return u1, u2
 
@@ -73,12 +108,18 @@ def open_momentum_window(master=None):
     def step():
         state['running'] = True
         dt = 0.02
+
         # update velocities and positions
         state['x1'] += state['v1'] * dt * 10
         state['x2'] += state['v2'] * dt * 10
 
         # detect collision (simple overlap)
-        if state['x1'] + 50 >= state['x2']:
+        w1, _h1 = box_size(m1.get())
+        w2, _h2 = box_size(m2.get())
+
+        if state['x1'] + w1 >= state['x2']:
+
+
             u1, u2 = compute_after_vels()
             # convert back to pixel/sec scale
             state['v1'] = u1
@@ -87,15 +128,125 @@ def open_momentum_window(master=None):
         # draw
         canvas.delete('all')
         canvas.create_line(0, 140, 1000, 140, fill='sienna')
-        canvas.create_rectangle(state['x1'], 80, state['x1']+50, 140, fill='skyblue')
-        canvas.create_text(state['x1']+25, 60, text=f"m1={m1.get():.2f}\nv1={state['v1']:.2f}")
-        canvas.create_rectangle(state['x2'], 80, state['x2']+50, 140, fill='orange')
-        canvas.create_text(state['x2']+25, 60, text=f"m2={m2.get():.2f}\nv2={state['v2']:.2f}")
+
+        # Text above boxes (mass labels + momentum label)
+        ttk_text_y = 40
+        canvas.create_text(260, ttk_text_y, text="Block 1", fill='black', anchor='center')
+        canvas.create_text(740, ttk_text_y, text="Block 2", fill='black', anchor='center')
+
+
+        # --- Block 1 ---
+
+        w1, h1 = box_size(m1.get())
+
+        x1_left = state['x1']
+        x1_right = x1_left + w1
+        # Scale TOTAL size: use dynamic height too.
+        y_top1 = 140 - h1
+        y_bottom1 = 140
+        canvas.create_rectangle(x1_left, y_top1, x1_right, y_bottom1, fill='skyblue')
+
+
+        # Velocity vector for block 1
+        v1_now = state['v1']
+        x1_mid = x1_left + w1 / 2
+        box_center_y1 = (y_top1 + y_bottom1) / 2
+
+
+        # Center arrows vertically inside the (dynamic-height) box.
+        y_vec = (y_top1 + y_bottom1) / 2
+
+        # Scale arrow length with box size as well as |v|.
+        # (Keeps arrows proportional when boxes get taller.)
+        arrow_scale = max(0.5, h1 / 60.0)
+        v1_len = min(160, max(0, abs(v1_now) * 8 * arrow_scale))
+
+
+        if v1_len > 1e-6:
+            if v1_now >= 0:
+                # Start at the box center; arrow head shows velocity direction.
+                canvas.create_line(x1_mid, y_vec, x1_mid + v1_len, y_vec, arrow='last', width=3, fill='blue')
+                canvas.create_text(
+                    x1_mid + v1_len + 10,
+                    y_vec,
+
+                    text=f"v1={v1_now:.2f} m/s",
+                    fill='blue',
+                    anchor='w',
+                )
+            else:
+                # Start at box center for negative velocities too.
+                canvas.create_line(x1_mid, y_vec, x1_mid - v1_len, y_vec, arrow='first', width=3, fill='blue')
+
+                canvas.create_text(
+                    x1_mid - v1_len - 10,
+                    y_vec,
+                    text=f"v1={v1_now:.2f} m/s",
+                    fill='blue',
+                    anchor='e',
+                )
+        else:
+            canvas.create_text(x1_mid, y_vec, text=f"v1={v1_now:.2f} m/s", fill='blue')
+
+        canvas.create_text(x1_left + w1 / 2, 60, text=f"m1={m1.get():.2f} kg", fill='black')
+
+
+        # --- Block 2 ---
+        w2, h2 = box_size(m2.get())
+        x2_left = state['x2']
+        x2_right = x2_left + w2
+        # Scale TOTAL size: use dynamic height too.
+        y_top2 = 140 - h2
+        y_bottom2 = 140
+        canvas.create_rectangle(x2_left, y_top2, x2_right, y_bottom2, fill='orange')
+
+
+        # Velocity vector for block 2
+        v2_now = state['v2']
+        x2_mid = x2_left + w2 / 2
+
+        # Velocity arrow centered vertically within block 2.
+        y_vec = (y_top2 + y_bottom2) / 2
+
+
+        # Scale arrow length with box height too.
+        arrow_scale = max(0.5, h2 / 60.0)
+        v2_len = min(160, max(0, abs(v2_now) * 8 * arrow_scale))
+
+
+        # Velocity arrow should show motion direction.
+        # For v2 < 0, arrow should clearly point RIGHT-TO-LEFT (head at the left).
+        if v2_len > 1e-6:
+            if v2_now >= 0:
+                # Start arrow from box center; head shows direction.
+                x_start = x2_mid
+                x_end = x_start + v2_len
+
+                canvas.create_line(x_start, y_vec, x_end, y_vec, arrow='last', width=3, fill='red')
+                canvas.create_text(x_end + 10, y_vec, text=f"v2={v2_now:.2f} m/s", fill='red', anchor='w')
+            else:
+                # Start arrow from box center; head shows direction.
+                x_start = x2_mid
+                x_end = x_start - v2_len
+
+                # arrow='last' keeps the head at the end point (left)
+                canvas.create_line(x_start, y_vec, x_end, y_vec, arrow='last', width=3, fill='red')
+                canvas.create_text(x_end - 10, y_vec, text=f"v2={v2_now:.2f} m/s", fill='red', anchor='e')
+        else:
+            canvas.create_text(x2_mid, y_vec, text=f"v2={v2_now:.2f} m/s", fill='red')
+
+
+
+
+        canvas.create_text(x2_left + w2 / 2, 60, text=f"m2={m2.get():.2f} kg", fill='black')
+
 
         if state['running']:
-            win.after(int(dt*1000), step)
+
+            win.after(int(dt * 1000), step)
 
     ttk.Button(frm, text='Reset', command=reset).pack(side=tk.LEFT, padx=6)
     ttk.Button(frm, text='Start', command=step).pack(side=tk.LEFT)
 
     reset()
+

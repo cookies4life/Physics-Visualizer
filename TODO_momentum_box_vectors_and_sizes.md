@@ -1,0 +1,5 @@
+- [ ] Update `momentum_vis.py` to display `kg` values for both blocks inside/near the boxes.
+- [ ] Increase block box size dynamically as `m1` / `m2` increase (and keep them separated from overlapping in the simple collision logic).
+- [ ] Update collision detection and position updates to account for dynamic box widths.
+- [ ] Update velocity arrow anchor points to use dynamic box sizes/edges.
+- [ ] Run `python3 -m py_compile` to verify no syntax errors.
