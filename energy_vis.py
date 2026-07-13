@@ -99,16 +99,21 @@ def open_energy_window(master=None):
     graph.pack(fill=tk.BOTH)
 
     # Store the current physics state and the energy history for plotting.
-    state = {'x': x0.get(), 'v': 0.0, 'running': False, 'deformed': False, 'just_started': False}
+    state = {'x': x0.get(), 'v': 0.0, 'running': False, 'deformed': False}
     energy_history = {'ke': [], 'pe': [], 't': []}
+    spring_items = []
+    mass_item = None
+    mass_label_item = None
+    info_item = None
+    background_item = None
 
     # Draw the spring shape between the anchor point and the mass.
     def draw_spring(cnv, cx, y1, y2, deformed=False):
+        items = []
         if deformed:
-            # draw a red stretched/broken spring
-            cnv.create_line(cx, y1, cx, y2, fill='red', width=3, dash=(4,4))
-            cnv.create_text(cx+60, y1+10, text='Spring deformed', fill='red', anchor='nw')
-            return
+            items.append(cnv.create_line(cx, y1, cx, y2, fill='red', width=3, dash=(4,4)))
+            items.append(cnv.create_text(cx+60, y1+10, text='Spring deformed', fill='red', anchor='nw'))
+            return items
         length = max(10, int(y2 - y1))
         coils = max(6, length // 8)
         amp = 12
@@ -118,30 +123,52 @@ def open_energy_window(master=None):
             y = int(y1 + t * (y2 - y1))
             x = cx + (amp if (i % 2 == 0) else -amp)
             points.append((x, y))
-        # start and end anchors
-        cnv.create_line(cx, y1, points[0][0], points[0][1], fill='black', width=2)
+        items.append(cnv.create_line(cx, y1, points[0][0], points[0][1], fill='black', width=2))
         for i in range(len(points)-1):
-            cnv.create_line(points[i][0], points[i][1], points[i+1][0], points[i+1][1], fill='black', width=2)
-        cnv.create_line(points[-1][0], points[-1][1], cx, y2, fill='black', width=2)
+            items.append(cnv.create_line(points[i][0], points[i][1], points[i+1][0], points[i+1][1], fill='black', width=2))
+        items.append(cnv.create_line(points[-1][0], points[-1][1], cx, y2, fill='black', width=2))
+        return items
 
     # Redraw the full spring-mass scene using the current simulation state.
     def draw_scene(a=None):
-        canvas.delete('all')
+        nonlocal spring_items, mass_item, mass_label_item, info_item, background_item
+
+        for item in spring_items:
+            canvas.delete(item)
+        spring_items = []
+        if mass_item is not None:
+            canvas.delete(mass_item)
+            mass_item = None
+        if mass_label_item is not None:
+            canvas.delete(mass_label_item)
+            mass_label_item = None
+        if info_item is not None:
+            canvas.delete(info_item)
+            info_item = None
+
+        if background_item is None:
+            background_item = canvas.create_rectangle(0, 0, 1, 1, fill='white', outline='white')
+        w = max(1, canvas.winfo_width())
+        h = max(1, canvas.winfo_height())
+        canvas.coords(background_item, 0, 0, w, h)
+        canvas.tag_lower(background_item)
+
         cx = _get_canvas_center()
         top = 20
         rest_pix = 80
         scale = 120
         ypix = top + rest_pix + state['x']*scale
-        draw_spring(canvas, cx, top, ypix-30, deformed=state.get('deformed'))
+
+        spring_items = draw_spring(canvas, cx, top, ypix-30, deformed=state.get('deformed'))
         rect_w = 60; rect_h = 40
-        canvas.create_rectangle(cx-rect_w//2, ypix-20, cx+rect_w//2, ypix+20, fill='steelblue' if not state.get('deformed') else 'red')
+        mass_item = canvas.create_rectangle(cx-rect_w//2, ypix-20, cx+rect_w//2, ypix+20, fill='steelblue' if not state.get('deformed') else 'red')
         mval = mass.get()
         weight = mval * 9.81
-        canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.2f} N", fill='white')
+        mass_label_item = canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.2f} N", fill='white')
         if a is not None:
-            canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s  a={a:.2f} m/s^2")
+            info_item = canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s  a={a:.2f} m/s^2")
         else:
-            canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s")
+            info_item = canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s")
 
     # Reset the simulation back to the initial displacement and clear the graph history.
     def reset():
@@ -149,21 +176,13 @@ def open_energy_window(master=None):
         state['v'] = 0.0
         state['running'] = False
         state['deformed'] = False
-        state['just_started'] = False
         energy_history['ke'].clear(); energy_history['pe'].clear(); energy_history['t'].clear()
         draw_scene()
         draw_energy_graph()
-        win.after_idle(lambda: (draw_scene(), draw_energy_graph()))
 
     # Advance the simulation by one time step and redraw the animation.
     def step():
         if not state.get('running'):
-            return
-        if state.get('just_started', False):
-            state['just_started'] = False
-            draw_scene()
-            if state.get('running'):
-                win.after(50, step)
             return
 
         m = mass.get(); kk = k.get()
@@ -245,10 +264,8 @@ def open_energy_window(master=None):
     def start():
         if not state.get('running'):
             state['running'] = True
-            state['just_started'] = True
             draw_scene()
-            win.after_idle(lambda: draw_scene())
-            win.after(50, step)
+            win.after(20, step)
 
     # Pause the simulation without resetting the current state.
     def stop():
