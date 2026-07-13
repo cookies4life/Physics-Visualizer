@@ -20,17 +20,26 @@ def open_rotation_window(master=None):
     radius = tk.DoubleVar(value=0.5)
     torque = tk.DoubleVar(value=1.0)
 
+    def _bind_display(var, display_var):
+        def _update(*_args):
+            display_var.set(f"{var.get():.2f}")
+        var.trace_add("write", _update)
+        _update()
+
+    mass_display = tk.StringVar(); radius_display = tk.StringVar(); torque_display = tk.StringVar()
+    _bind_display(mass, mass_display); _bind_display(radius, radius_display); _bind_display(torque, torque_display)
+
     ttk.Label(frm, text="Mass (kg)").grid(row=0, column=0, sticky='w')
     ttk.Scale(frm, from_=0.1, to=20, variable=mass, orient=tk.HORIZONTAL).grid(row=0, column=1, sticky='we')
-    ttk.Label(frm, textvariable=mass).grid(row=0, column=2)
+    ttk.Label(frm, textvariable=mass_display).grid(row=0, column=2)
 
     ttk.Label(frm, text="Radius (m)").grid(row=1, column=0, sticky='w')
     ttk.Scale(frm, from_=0.05, to=2, variable=radius, orient=tk.HORIZONTAL).grid(row=1, column=1, sticky='we')
-    ttk.Label(frm, textvariable=radius).grid(row=1, column=2)
+    ttk.Label(frm, textvariable=radius_display).grid(row=1, column=2)
 
     ttk.Label(frm, text="Applied torque (N·m)").grid(row=2, column=0, sticky='w')
     ttk.Scale(frm, from_=-10, to=10, variable=torque, orient=tk.HORIZONTAL).grid(row=2, column=1, sticky='we')
-    ttk.Label(frm, textvariable=torque).grid(row=2, column=2)
+    ttk.Label(frm, textvariable=torque_display).grid(row=2, column=2)
 
     canvas = tk.Canvas(frm, bg='white', height=300)
     canvas.grid(row=3, column=0, columnspan=3, pady=8)

@@ -20,23 +20,32 @@ def open_fluids_window(master=None):
     vol = tk.DoubleVar(value=0.01)
     mass = tk.DoubleVar(value=5.0)
 
+    def _bind_display(var, display_var):
+        def _update(*_args):
+            display_var.set(f"{var.get():.2f}")
+        var.trace_add("write", _update)
+        _update()
+
+    rho_display = tk.StringVar(); depth_display = tk.StringVar(); vol_display = tk.StringVar(); mass_display = tk.StringVar()
+    _bind_display(rho, rho_display); _bind_display(depth, depth_display); _bind_display(vol, vol_display); _bind_display(mass, mass_display)
+
     control = ttk.Frame(frm)
     control.pack(fill=tk.X)
     ttk.Label(control, text='Fluid density (kg/m³)').pack(side=tk.LEFT)
     ttk.Scale(control, from_=100, to=2000, variable=rho, orient=tk.HORIZONTAL, command=lambda e: update()).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=rho).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=rho_display).pack(side=tk.LEFT, padx=6)
 
     ttk.Label(control, text='Depth (m)').pack(side=tk.LEFT, padx=(10,0))
     ttk.Scale(control, from_=0, to=50, variable=depth, orient=tk.HORIZONTAL, command=lambda e: update()).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=depth).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=depth_display).pack(side=tk.LEFT, padx=6)
 
     ttk.Label(control, text='Volume (m³)').pack(side=tk.LEFT, padx=(10,0))
     ttk.Scale(control, from_=0.0001, to=1, variable=vol, orient=tk.HORIZONTAL, command=lambda e: update()).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=vol).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=vol_display).pack(side=tk.LEFT, padx=6)
 
     ttk.Label(control, text='Mass (kg)').pack(side=tk.LEFT, padx=(10,0))
     ttk.Scale(control, from_=0.01, to=200, variable=mass, orient=tk.HORIZONTAL, command=lambda e: update()).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=mass).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=mass_display).pack(side=tk.LEFT, padx=6)
 
     canvas = tk.Canvas(frm, bg='lightblue', height=260)
     canvas.pack(fill=tk.BOTH, expand=True, pady=8)
@@ -71,7 +80,7 @@ def open_fluids_window(master=None):
             canvas.create_rectangle(w-80, y, w, y+(h/10), fill=color, outline='')
             # label pressure in Pa at intervals
             if i % 2 == 0:
-                canvas.create_text(w-120, y+8, text=f"{p:.0f} Pa", anchor='w')
+                canvas.create_text(w-120, y+8, text=f"{p:.2f} Pa", anchor='w')
 
         # draw object as rectangle at vertical position depending on buoyant equilibrium
         # map physical depth to pixel height
@@ -94,6 +103,6 @@ def open_fluids_window(master=None):
             canvas.create_rectangle(x0, y0, x0+120, y0+120, fill='brown')
             canvas.create_text(x0+10, y0+10, anchor='nw', text='Object (sunk)')
         # label units
-        canvas.create_text(10, h-10, anchor='sw', text=f"Fluid density: {rho.get():.0f} kg/m³   Depth: {depth.get():.2f} m   Buoyant force: {buoy:.2f} N")
+        canvas.create_text(10, h-10, anchor='sw', text=f"Fluid density: {rho.get():.2f} kg/m³   Depth: {depth.get():.2f} m   Buoyant force: {buoy:.2f} N")
 
     update()

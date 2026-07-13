@@ -24,13 +24,24 @@ def open_newton_window(master=None):
     show_weight = tk.BooleanVar(value=True)
     show_normal = tk.BooleanVar(value=True)
 
+    def _bind_display(var, display_var):
+        def _update(*_args):
+            display_var.set(f"{var.get():.2f}")
+        var.trace_add("write", _update)
+        _update()
+
+    mass_display = tk.StringVar()
+    force_display = tk.StringVar()
+    _bind_display(mass, mass_display)
+    _bind_display(force, force_display)
+
     ttk.Label(frm, text="Mass (kg)").grid(row=0, column=0, sticky='w')
     ttk.Scale(frm, from_=0.1, to=20, variable=mass, orient=tk.HORIZONTAL).grid(row=0, column=1, sticky='we')
-    ttk.Label(frm, textvariable=mass).grid(row=0, column=2)
+    ttk.Label(frm, textvariable=mass_display).grid(row=0, column=2)
 
     ttk.Label(frm, text="Applied force (N)").grid(row=1, column=0, sticky='w')
     ttk.Scale(frm, from_=-50, to=50, variable=force, orient=tk.HORIZONTAL).grid(row=1, column=1, sticky='we')
-    ttk.Label(frm, textvariable=force).grid(row=1, column=2)
+    ttk.Label(frm, textvariable=force_display).grid(row=1, column=2)
 
     ttk.Checkbutton(frm, text="Include kinetic friction (μ=0.3)", variable=friction_on).grid(row=2, column=0, columnspan=3, sticky='w')
     ttk.Checkbutton(frm, text="Show force vectors", variable=show_forces).grid(row=3, column=0, columnspan=3, sticky='w')
@@ -62,10 +73,10 @@ def open_newton_window(master=None):
                 length = max(20, min(160, abs(F)*3))
                 if F > 0:
                     canvas.create_line(midx, 140, midx+length, 140, arrow='last', width=3, fill='blue')
-                    canvas.create_text(midx+length+30, 140, text=f"F={F:.1f} N")
+                    canvas.create_text(midx+length+30, 140, text=f"F={F:.2f} N")
                 else:
                     canvas.create_line(midx, 140, midx-length, 140, arrow='first', width=3, fill='blue')
-                    canvas.create_text(midx-length-30, 140, text=f"F={F:.1f} N")
+                    canvas.create_text(midx-length-30, 140, text=f"F={F:.2f} N")
 
             # friction
             if abs(F_fric) > 1e-6:
@@ -74,15 +85,15 @@ def open_newton_window(master=None):
                     canvas.create_line(midx, 150, midx+length, 150, arrow='last', width=2, fill='brown')
                 else:
                     canvas.create_line(midx, 150, midx-length, 150, arrow='first', width=2, fill='brown')
-                canvas.create_text(midx, 110, text=f"F_fric={F_fric:.1f} N")
+                canvas.create_text(midx, 110, text=f"F_fric={F_fric:.2f} N")
 
         # weight and normal
         if show_weight.get():
             canvas.create_line(midx-60, 90, midx-60, 140, arrow='last', fill='black')
-            canvas.create_text(midx-60, 80, text=f"W={m*9.81:.1f} N")
+            canvas.create_text(midx-60, 80, text=f"W={m*9.81:.2f} N")
         if show_normal.get():
             canvas.create_line(midx+60, 140, midx+60, 90, arrow='last', fill='green')
-            canvas.create_text(midx+60, 80, text=f"N={m*9.81:.1f} N")
+            canvas.create_text(midx+60, 80, text=f"N={m*9.81:.2f} N")
 
         canvas.create_text(10, 10, anchor='nw', text=f"a={((F+F_fric)/m):.2f} m/s^2  v={v:.2f} m/s")
 

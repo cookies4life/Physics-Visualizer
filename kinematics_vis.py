@@ -39,21 +39,30 @@ def open_kinematics_window(master=None):
     gravity = tk.DoubleVar(value=9.81)
     dt_var = tk.DoubleVar(value=0.03)
 
+    def _bind_display(var, display_var):
+        def _update(*_args):
+            display_var.set(f"{var.get():.2f}")
+        var.trace_add("write", _update)
+        _update()
+
+    initial_speed_display = tk.StringVar(); angle_deg_display = tk.StringVar(); gravity_display = tk.StringVar(); dt_display = tk.StringVar()
+    _bind_display(initial_speed, initial_speed_display); _bind_display(angle_deg, angle_deg_display); _bind_display(gravity, gravity_display); _bind_display(dt_var, dt_display)
+
     ttk.Label(controls, text="Initial speed (m/s)").pack()
     ttk.Scale(controls, from_=0, to=100, variable=initial_speed, orient=tk.HORIZONTAL).pack(fill=tk.X)
-    ttk.Label(controls, textvariable=initial_speed).pack()
+    ttk.Label(controls, textvariable=initial_speed_display).pack()
 
     ttk.Label(controls, text="Launch angle (deg)").pack(pady=(8,0))
     ttk.Scale(controls, from_=0, to=90, variable=angle_deg, orient=tk.HORIZONTAL).pack(fill=tk.X)
-    ttk.Label(controls, textvariable=angle_deg).pack()
+    ttk.Label(controls, textvariable=angle_deg_display).pack()
 
     ttk.Label(controls, text="Gravity (m/s^2)").pack(pady=(8,0))
     ttk.Scale(controls, from_=0.1, to=20, variable=gravity, orient=tk.HORIZONTAL).pack(fill=tk.X)
-    ttk.Label(controls, textvariable=gravity).pack()
+    ttk.Label(controls, textvariable=gravity_display).pack()
 
     ttk.Label(controls, text="Timestep dt (s)").pack(pady=(8,0))
     ttk.Scale(controls, from_=0.005, to=0.1, variable=dt_var, orient=tk.HORIZONTAL).pack(fill=tk.X)
-    ttk.Label(controls, textvariable=dt_var).pack()
+    ttk.Label(controls, textvariable=dt_display).pack()
 
     btn_frame = ttk.Frame(controls)
     btn_frame.pack(pady=12, fill=tk.X)
@@ -150,7 +159,7 @@ def open_kinematics_window(master=None):
 
         # show numeric info and dt
         speed = math.hypot(vx, vy)
-        info = f"t={sim['t']:.2f}s  x={x:.2f} m  y={max(y,0):.2f} m  |v|={speed:.2f} m/s  dt={dt:.3f}s"
+        info = f"t={sim['t']:.2f}s  x={x:.2f} m  y={max(y,0):.2f} m  |v|={speed:.2f} m/s  dt={dt:.2f}s"
         canvas.create_text(10, 10, anchor='nw', text=info, fill='black')
 
         draw_graphs()

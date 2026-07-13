@@ -21,20 +21,29 @@ def open_energy_window(master=None):
     k = tk.DoubleVar(value=50.0)
     x0 = tk.DoubleVar(value=0.5)
 
+    def _bind_display(var, display_var):
+        def _update(*_args):
+            display_var.set(f"{var.get():.2f}")
+        var.trace_add("write", _update)
+        _update()
+
+    mass_display = tk.StringVar(); k_display = tk.StringVar(); x0_display = tk.StringVar(); b_display = tk.StringVar()
+    _bind_display(mass, mass_display); _bind_display(k, k_display); _bind_display(x0, x0_display); _bind_display(b, b_display)
+
     control = ttk.Frame(frm)
     control.pack(fill=tk.X)
     ttk.Label(control, text='Mass (kg)').pack(side=tk.LEFT)
     ttk.Scale(control, from_=0.1, to=10, variable=mass, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=mass).pack(side=tk.LEFT, padx=8)
+    ttk.Label(control, textvariable=mass_display).pack(side=tk.LEFT, padx=8)
 
     ttk.Label(control, text='k (N/m)').pack(side=tk.LEFT, padx=(10,0))
     ttk.Scale(control, from_=1, to=500, variable=k, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=k).pack(side=tk.LEFT, padx=8)
+    ttk.Label(control, textvariable=k_display).pack(side=tk.LEFT, padx=8)
     
     # initial displacement control
     ttk.Label(control, text='x0 (m)').pack(side=tk.LEFT, padx=(10,0))
     ttk.Scale(control, from_=-2.0, to=2.0, variable=x0, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=x0).pack(side=tk.LEFT, padx=8)
+    ttk.Label(control, textvariable=x0_display).pack(side=tk.LEFT, padx=8)
     
     # Gravity and air resistance controls
     gravity = tk.BooleanVar(value=False)
@@ -44,7 +53,7 @@ def open_energy_window(master=None):
     ttk.Checkbutton(control, text='Air Resist', variable=air).pack(side=tk.LEFT, padx=(6,0))
     ttk.Label(control, text='damping b').pack(side=tk.LEFT, padx=(6,0))
     ttk.Scale(control, from_=0.0, to=50.0, variable=b, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=b).pack(side=tk.LEFT, padx=8)
+    ttk.Label(control, textvariable=b_display).pack(side=tk.LEFT, padx=8)
 
     canvas = tk.Canvas(frm, bg='white', height=300)
     canvas.pack(fill=tk.BOTH, expand=True, pady=8)
@@ -143,7 +152,7 @@ def open_energy_window(master=None):
         canvas.create_rectangle(cx-rect_w//2, ypix-20, cx+rect_w//2, ypix+20, fill='steelblue' if not state.get('deformed') else 'red')
         mval = m
         weight = mval * 9.81
-        canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.1f} N", fill='white')
+        canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.2f} N", fill='white')
         canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s  a={a:.2f} m/s^2")
 
         # energies (spring PE + gravitational PE if enabled)

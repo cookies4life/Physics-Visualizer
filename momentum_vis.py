@@ -22,20 +22,29 @@ def open_momentum_window(master=None):
     v2 = tk.DoubleVar(value=-2.0)
     elastic = tk.BooleanVar(value=True)
 
+    def _bind_display(var, display_var):
+        def _update(*_args):
+            display_var.set(f"{var.get():.2f}")
+        var.trace_add("write", _update)
+        _update()
+
+    m1_display = tk.StringVar(); v1_display = tk.StringVar(); m2_display = tk.StringVar(); v2_display = tk.StringVar()
+    _bind_display(m1, m1_display); _bind_display(v1, v1_display); _bind_display(m2, m2_display); _bind_display(v2, v2_display)
+
     control = ttk.Frame(frm)
     control.pack(fill=tk.X)
     ttk.Label(control, text='m1').pack(side=tk.LEFT)
     ttk.Scale(control, from_=0.1, to=20, variable=m1, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=m1).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=m1_display).pack(side=tk.LEFT, padx=6)
     ttk.Label(control, text='v1').pack(side=tk.LEFT)
     ttk.Scale(control, from_=-50, to=50, variable=v1, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=v1).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=v1_display).pack(side=tk.LEFT, padx=6)
     ttk.Label(control, text='m2').pack(side=tk.LEFT)
     ttk.Scale(control, from_=0.1, to=20, variable=m2, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=m2).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=m2_display).pack(side=tk.LEFT, padx=6)
     ttk.Label(control, text='v2').pack(side=tk.LEFT)
     ttk.Scale(control, from_=-50, to=50, variable=v2, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
-    ttk.Label(control, textvariable=v2).pack(side=tk.LEFT, padx=6)
+    ttk.Label(control, textvariable=v2_display).pack(side=tk.LEFT, padx=6)
     ttk.Checkbutton(control, text='Elastic', variable=elastic).pack(side=tk.LEFT, padx=6)
 
     canvas = tk.Canvas(frm, bg='white', height=160)
@@ -79,9 +88,9 @@ def open_momentum_window(master=None):
         canvas.delete('all')
         canvas.create_line(0, 140, 1000, 140, fill='sienna')
         canvas.create_rectangle(state['x1'], 80, state['x1']+50, 140, fill='skyblue')
-        canvas.create_text(state['x1']+25, 60, text=f"m1={m1.get():.1f}\nv1={state['v1']:.2f}")
+        canvas.create_text(state['x1']+25, 60, text=f"m1={m1.get():.2f}\nv1={state['v1']:.2f}")
         canvas.create_rectangle(state['x2'], 80, state['x2']+50, 140, fill='orange')
-        canvas.create_text(state['x2']+25, 60, text=f"m2={m2.get():.1f}\nv2={state['v2']:.2f}")
+        canvas.create_text(state['x2']+25, 60, text=f"m2={m2.get():.2f}\nv2={state['v2']:.2f}")
 
         if state['running']:
             win.after(int(dt*1000), step)
