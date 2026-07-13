@@ -63,35 +63,59 @@ def open_incline_window(master=None):
     ttk.Checkbutton(frm, text="Show normal force", variable=show_normal).grid(row=7, column=0, columnspan=3, sticky='w')
     ttk.Checkbutton(frm, text="Show friction force", variable=show_friction).grid(row=8, column=0, columnspan=3, sticky='w')
 
-    canvas = tk.Canvas(frm, bg='white', height=280)
+    canvas = tk.Canvas(frm, bg='white', height=480)
     canvas.grid(row=9, column=0, columnspan=3, sticky='nsew', pady=8)
     frm.columnconfigure(1, weight=1)
 
-    state = {'s': 0.0, 'v': 0.0, 'top': (0, 0)}
+    state = {'s': 0.0, 'v': 0.0, 'top': (0, 0), 'force_handle': (0, 0)}
     running = {'on': False}
-    dragging = {'on': False}
+    dragging = {'mode': None}
 
     def on_canvas_press(event):
         top_x, top_y = state['top']
-        if (event.x - top_x) ** 2 + (event.y - top_y) ** 2 <= 15 ** 2:
-            dragging['on'] = True
+        fx, fy = state['force_handle']
+        if (event.x - fx) ** 2 + (event.y - fy) ** 2 <= 16 ** 2:
+            dragging['mode'] = 'force'
+            return
+        if (event.x - top_x) ** 2 + (event.y - top_y) ** 2 <= 16 ** 2:
+            dragging['mode'] = 'ramp'
+            return
+        dragging['mode'] = None
 
     def on_canvas_release(event):
-        dragging['on'] = False
+        dragging['mode'] = None
 
     def on_canvas_drag(event):
-        if not dragging['on']:
+        if dragging['mode'] is None:
             return
         base_x = 100
-        base_y = 240
-        dx = event.x - base_x
-        dy = base_y - event.y
-        if dx <= 20:
-            dx = 20
-        angle_rad = math.atan2(dy, dx)
-        angle_deg = max(-45.0, min(45.0, math.degrees(angle_rad)))
-        incline_angle.set(angle_deg)
-        draw_plot(0, 0, 0, 0)
+        base_y = 280
+        if dragging['mode'] == 'ramp':
+            dx = event.x - base_x
+            dy = base_y - event.y
+            if abs(dx) < 20:
+                dx = 20 if dx >= 0 else -20
+            angle_rad = math.atan2(dy, dx)
+            angle_deg = max(-45.0, min(45.0, math.degrees(angle_rad)))
+            incline_angle.set(angle_deg)
+            draw_plot(0, 0, 0, 0)
+        else:
+            angle = math.radians(incline_angle.get())
+            length = 280
+            x2 = base_x + length * math.cos(angle)
+            y2 = base_y - length * math.sin(angle)
+            top_x, top_y, bottom_x, bottom_y = (x2, y2, base_x, base_y) if y2 < base_y else (base_x, base_y, x2, y2)
+            dx = bottom_x - top_x
+            dy = bottom_y - top_y
+            incline_length = math.hypot(dx, dy)
+            dir_x = dx / incline_length
+            dir_y = dy / incline_length
+            # Project drag onto incline direction for force value
+            center_x = top_x + state['s'] * dir_x
+            center_y = top_y + state['s'] * dir_y
+            proj = (event.x - center_x) * dir_x + (event.y - center_y) * dir_y
+            force.set(max(-50.0, min(50.0, proj * 0.5)))
+            draw_plot(0, 0, 0, 0)
 
     canvas.bind('<ButtonPress-1>', on_canvas_press)
     canvas.bind('<ButtonRelease-1>', on_canvas_release)
@@ -106,17 +130,17 @@ def open_incline_window(master=None):
     def draw_plot(ax=0, ay=0, an=0, af=0):
         canvas.delete('all')
         angle = math.radians(incline_angle.get())
-        base_y = 240
+        base_y = 280
         base_x = 100
-        length = 520
+        length = 280
         x2 = base_x + length * math.cos(angle)
         y2 = base_y - length * math.sin(angle)
         canvas.create_line(base_x, base_y, x2, y2, fill='sienna', width=4)
         canvas.create_line(base_x, base_y, x2, base_y, fill='black', dash=(4, 2))
 
         top_x, top_y, bottom_x, bottom_y = (x2, y2, base_x, base_y) if y2 < base_y else (base_x, base_y, x2, y2)
-        canvas.create_oval(top_x-8, top_y-8, top_x+8, top_y+8, fill='blue', outline='black')
-        canvas.create_text(top_x+15, top_y-10, text='Drag handle', anchor='w', fill='black', font=(None, 8))
+        canvas.create_oval(top_x-10, top_y-10, top_x+10, top_y+10, fill='blue', outline='black')
+        canvas.create_text(top_x+20, top_y-10, text='Drag handle', anchor='w', fill='black', font=(None, 8))
         state['top'] = (top_x, top_y)
 
         dx = bottom_x - top_x
@@ -129,10 +153,10 @@ def open_incline_window(master=None):
 
         block_x = top_x + state['s'] * dir_x
         block_y = top_y + state['s'] * dir_y
-        box_w = 80
-        box_h = 45
-        box_cx = block_x + normal_x * (box_h / 2 + 4)
-        box_cy = block_y + normal_y * (box_h / 2 + 4)
+        box_w = 120
+        box_h = 70
+        box_cx = block_x + normal_x * (box_h / 2 + 6)
+        box_cy = block_y + normal_y * (box_h / 2 + 6)
         canvas.create_rectangle(
             box_cx - box_w / 2,
             box_cy - box_h / 2,
@@ -148,12 +172,12 @@ def open_incline_window(master=None):
         if show_weight.get():
             wx = box_cx
             wy = box_cy
-            canvas.create_line(wx, wy, wx, wy + 80, arrow='last', fill='black', width=2)
-            canvas.create_text(wx - 25, wy + 90, text=f"W={mass.get()*g_val:.2f} N")
+            canvas.create_line(wx, wy, wx, wy + 100, arrow='last', fill='black', width=2)
+            canvas.create_text(wx - 25, wy + 110, text=f"W={mass.get()*g_val:.2f} N")
 
         if show_normal.get():
-            nx = box_cx + normal_x * 60
-            ny = box_cy + normal_y * 60
+            nx = box_cx + normal_x * 80
+            ny = box_cy + normal_y * 80
             canvas.create_line(box_cx, box_cy, nx, ny, arrow='last', fill='green', width=2)
             canvas.create_text(nx + 10, ny - 5, text=f"mg cosθ={g_perp:.2f} N")
 
@@ -162,21 +186,24 @@ def open_incline_window(master=None):
             direction = -1 if state['v'] > 0 else 1
             if abs(state['v']) < 1e-3 and ax < 0:
                 direction = 1
-            fx = box_cx + direction * dir_x * 70
-            fy = box_cy + direction * dir_y * 70
-            fx2 = fx - direction * normal_x * 50
-            fy2 = fy - direction * normal_y * 50
+            fx = box_cx + direction * dir_x * 90
+            fy = box_cy + direction * dir_y * 90
+            fx2 = fx - direction * normal_x * 60
+            fy2 = fy - direction * normal_y * 60
             canvas.create_line(fx, fy, fx2, fy2, arrow='last', fill='brown', width=2)
             canvas.create_text(fx2 - 10, fy2 + 10, text=f"F_fric={friction_mag:.2f} N")
 
+        frx = box_cx + dir_x * 110
+        fry = box_cy + dir_y * 110
+        state['force_handle'] = (frx, fry)
         if show_forces.get():
-            frx = box_cx + dir_x * 70
-            fry = box_cy + dir_y * 70
             canvas.create_line(box_cx, box_cy, frx, fry, arrow='last', fill='blue', width=3)
             canvas.create_text(frx + 15, fry + 15, text=f"F={force.get():.2f} N")
+        canvas.create_oval(frx-8, fry-8, frx+8, fry+8, fill='lightblue', outline='black')
+        canvas.create_text(frx+15, fry+8, text='Drag F', anchor='w', fill='black', font=(None, 8))
 
-        cgx = box_cx + dir_x * 60
-        cgy = box_cy + dir_y * 60
+        cgx = box_cx + dir_x * 80
+        cgy = box_cy + dir_y * 80
         canvas.create_line(box_cx, box_cy, cgx, cgy, arrow='last', fill='orange', width=2)
         canvas.create_text(cgx + 10, cgy + 10, text=f"mg sinθ={g_par:.2f} N", fill='orange')
 
@@ -201,8 +228,8 @@ def open_incline_window(master=None):
             a = (net_force_down + friction) / m
         state['v'] += a * 0.03
         state['s'] += state['v'] * 0.03
-        max_s = 520 + 80
-        min_s = -80
+        max_s = 280 / 8 + 4
+        min_s = -4
         if state['s'] < min_s:
             state['s'] = min_s
             state['v'] = 0
