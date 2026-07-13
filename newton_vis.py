@@ -67,8 +67,35 @@ def open_incline_window(master=None):
     canvas.grid(row=9, column=0, columnspan=3, sticky='nsew', pady=8)
     frm.columnconfigure(1, weight=1)
 
-    state = {'s': 0.0, 'v': 0.0}
+    state = {'s': 0.0, 'v': 0.0, 'top': (0, 0)}
     running = {'on': False}
+    dragging = {'on': False}
+
+    def on_canvas_press(event):
+        top_x, top_y = state['top']
+        if (event.x - top_x) ** 2 + (event.y - top_y) ** 2 <= 15 ** 2:
+            dragging['on'] = True
+
+    def on_canvas_release(event):
+        dragging['on'] = False
+
+    def on_canvas_drag(event):
+        if not dragging['on']:
+            return
+        base_x = 100
+        base_y = 240
+        dx = event.x - base_x
+        dy = base_y - event.y
+        if dx <= 20:
+            dx = 20
+        angle_rad = math.atan2(dy, dx)
+        angle_deg = max(5.0, min(45.0, math.degrees(angle_rad)))
+        incline_angle.set(angle_deg)
+        draw_plot(0, 0, 0, 0)
+
+    canvas.bind('<ButtonPress-1>', on_canvas_press)
+    canvas.bind('<ButtonRelease-1>', on_canvas_release)
+    canvas.bind('<B1-Motion>', on_canvas_drag)
 
     def reset():
         state['s'] = 0.0
@@ -86,6 +113,10 @@ def open_incline_window(master=None):
         y2 = base_y - length * math.sin(angle)
         canvas.create_line(base_x, base_y, x2, y2, fill='sienna', width=4)
         canvas.create_line(base_x, base_y, x2, base_y, fill='black', dash=(4, 2))
+        canvas.create_oval(x2-8, y2-8, x2+8, y2+8, fill='blue', outline='black')
+        canvas.create_text(x2+15, y2-10, text='Drag handle', anchor='w', fill='black', font=(None, 8))
+
+        state['top'] = (x2, y2)
 
         block_x = base_x + state['s'] * 8 * math.cos(angle)
         block_y = base_y - state['s'] * 8 * math.sin(angle)
@@ -102,20 +133,24 @@ def open_incline_window(master=None):
         canvas.create_polygon(p1, p2, p3, p4, fill='gray')
         canvas.create_text(block_x, block_y, text=f"m={mass.get():.2f} kg", fill='white')
 
+        g_val = 9.81
+        g_par = mass.get() * g_val * math.sin(angle)
+        g_perp = mass.get() * g_val * math.cos(angle)
+
         if show_weight.get():
             wx, wy = block_x, block_y
             wy2 = wy + 80
             canvas.create_line(wx, wy, wx, wy2, arrow='last', fill='black', width=2)
-            canvas.create_text(wx-25, wy2+10, text=f"W={mass.get()*9.81:.2f} N")
+            canvas.create_text(wx-25, wy2+10, text=f"W={mass.get()*g_val:.2f} N")
+
         if show_normal.get():
-            nx = block_x - math.sin(angle) * 50 - 20
-            ny = block_y - math.cos(angle) * 50 + 10
-            nx2 = nx + math.sin(angle) * 60
-            ny2 = ny - math.cos(angle) * 60
-            canvas.create_line(nx, ny, nx2, ny2, arrow='last', fill='green', width=2)
-            canvas.create_text(nx2+10, ny2-10, text=f"N={mass.get()*9.81*math.cos(angle):.2f} N")
+            nx = block_x - math.sin(angle) * 60
+            ny = block_y - math.cos(angle) * 60
+            canvas.create_line(block_x, block_y, nx, ny, arrow='last', fill='green', width=2)
+            canvas.create_text(nx-10, ny-10, text=f"mg cosθ={g_perp:.2f} N")
+
         if show_friction.get() and friction_on.get():
-            fg = friction_mu.get() * mass.get() * 9.81 * math.cos(angle)
+            fg = friction_mu.get() * g_perp
             direction = -1 if state['v'] > 0 else 1
             if abs(state['v']) < 1e-3 and ax < 0:
                 direction = 1
@@ -125,11 +160,17 @@ def open_incline_window(master=None):
             fy2 = fy + direction * math.cos(angle) * 50
             canvas.create_line(fx, fy, fx2, fy2, arrow='last', fill='brown', width=2)
             canvas.create_text(fx2-10, fy2+10, text=f"F_fric={fg:.2f} N")
+
         if show_forces.get():
             frx = block_x + math.cos(angle) * 70
             fry = block_y + math.sin(angle) * 70
             canvas.create_line(block_x, block_y, frx, fry, arrow='last', fill='blue', width=3)
             canvas.create_text(frx+15, fry+15, text=f"F={force.get():.2f} N")
+
+        cgx = block_x + math.cos(angle) * 60
+        cgy = block_y + math.sin(angle) * 60
+        canvas.create_line(block_x, block_y, cgx, cgy, arrow='last', fill='orange', width=2)
+        canvas.create_text(cgx+10, cgy+10, text=f"mg sinθ={g_par:.2f} N", fill='orange')
 
         canvas.create_text(10, 10, anchor='nw', text=f"vx={state['v']:.2f} m/s   s={state['s']:.2f} m   θ={incline_angle.get():.2f}°")
 
