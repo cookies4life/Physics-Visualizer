@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import math
-
+#energy vis 
 
 def open_energy_window(master=None):
     win = tk.Toplevel(master) if master else tk.Tk()
