@@ -9,7 +9,23 @@ def open_energy_window(master=None):
     """Create the spring-mass demo window with controls, animation, and energy graphs."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Work, Energy & Power — Mass-Spring Demo")
-    win.geometry("800x360")
+
+    def _maximize_or_fullscreen_max(win_obj: tk.Toplevel):
+        """Best-effort maximize for cross-platform Tk (maximized window).
+
+        Uses 'zoomed' when available. Avoid fullscreen toggle to prevent a
+        visible flash.
+        """
+        try:
+            win_obj.state('zoomed')
+        except Exception:
+            # If zoomed isn't supported, do nothing (no flash).
+            pass
+
+    # Start as maximized.
+    win.after(0, lambda: _maximize_or_fullscreen_max(win))
+
+
 
     # Create the main window title and descriptive header text.
     header = ttk.Frame(win)
