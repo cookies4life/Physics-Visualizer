@@ -74,13 +74,21 @@ def open_energy_window(master=None):
     canvas = tk.Canvas(frm, bg='white', height=260)
     canvas.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
 
-    help_text = ttk.Label(frm, text="The wave-like spring shape shows how the mass stretches and compresses the spring over time; it is a visual of stored elastic energy.", wraplength=760, justify=tk.LEFT)
+    def _get_canvas_center():
+        win.update_idletasks()
+        canvas.update_idletasks()
+        width = canvas.winfo_width()
+        if width <= 1:
+            width = max(200, win.winfo_width() - 20)
+        return max(40, int(width / 2))
+
+    help_text = ttk.Label(frm, text="The spring coil shows the mass stretching and compressing over time. The two curves below are energy traces: blue is kinetic energy and orange is potential energy stored in the spring.", wraplength=760, justify=tk.LEFT)
     help_text.pack(anchor='w', padx=8, pady=(4, 6))
 
     graph = tk.Canvas(frm, bg='white', height=100)
     graph.pack(fill=tk.BOTH)
 
-    state = {'x': x0.get(), 'v': 0.0, 'running': False, 'deformed': False}
+    state = {'x': x0.get(), 'v': 0.0, 'running': False, 'deformed': False, 'just_started': False}
     energy_history = {'ke': [], 'pe': [], 't': []}
 
     def draw_spring(cnv, cx, y1, y2, deformed=False):
@@ -105,33 +113,45 @@ def open_energy_window(master=None):
             cnv.create_line(points[i][0], points[i][1], points[i+1][0], points[i+1][1], fill='black', width=2)
         cnv.create_line(points[-1][0], points[-1][1], cx, y2, fill='black', width=2)
 
+    def draw_scene(a=None):
+        canvas.delete('all')
+        cx = _get_canvas_center()
+        top = 20
+        rest_pix = 80
+        scale = 120
+        ypix = top + rest_pix + state['x']*scale
+        draw_spring(canvas, cx, top, ypix-30, deformed=state.get('deformed'))
+        rect_w = 60; rect_h = 40
+        canvas.create_rectangle(cx-rect_w//2, ypix-20, cx+rect_w//2, ypix+20, fill='steelblue' if not state.get('deformed') else 'red')
+        mval = mass.get()
+        weight = mval * 9.81
+        canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.2f} N", fill='white')
+        if a is not None:
+            canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s  a={a:.2f} m/s^2")
+        else:
+            canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s")
+
     def reset():
         state['x'] = x0.get()
         state['v'] = 0.0
+        state['running'] = False
+        state['deformed'] = False
+        state['just_started'] = False
         energy_history['ke'].clear(); energy_history['pe'].clear(); energy_history['t'].clear()
-        # redraw static initial frame
-        canvas.delete('all')
-        # vertical spring: anchor at (cx, top)
-        cx = int(canvas.winfo_width()/2) if canvas.winfo_width() else 200
-        top = 20
-        rest_pix = 80  # pixels at x=0
-        scale = 120
-        ypix = top + rest_pix + state['x']*scale
-        # draw spring
-        draw_spring(canvas, cx, top, ypix-30, deformed=state.get('deformed'))
-        # draw mass
-        rect_w = 60; rect_h = 40
-        canvas.create_rectangle(cx-rect_w//2, ypix-20, cx+rect_w//2, ypix+20, fill='steelblue' if not state.get('deformed') else 'red')
-        # show mass and weight inside box
-        g = 9.81
-        mval = mass.get()
-        weight = mval * g
-        canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.2f} N", fill='white')
+        draw_scene()
         draw_energy_graph()
+        win.after_idle(lambda: (draw_scene(), draw_energy_graph()))
 
     def step():
         if not state.get('running'):
             return
+        if state.get('just_started', False):
+            state['just_started'] = False
+            draw_scene()
+            if state.get('running'):
+                win.after(50, step)
+            return
+
         m = mass.get(); kk = k.get()
         dt = 0.02
         g = 9.81 if gravity.get() else 0.0
@@ -160,19 +180,7 @@ def open_energy_window(master=None):
             state['deformed'] = False
 
         # draw spring-mass vertically
-        canvas.delete('all')
-        cx = int(canvas.winfo_width()/2) if canvas.winfo_width() else 200
-        top = 20
-        rest_pix = 80
-        scale = 120
-        ypix = top + rest_pix + state['x']*scale
-        draw_spring(canvas, cx, top, ypix-30, deformed=state.get('deformed'))
-        rect_w = 60; rect_h = 40
-        canvas.create_rectangle(cx-rect_w//2, ypix-20, cx+rect_w//2, ypix+20, fill='steelblue' if not state.get('deformed') else 'red')
-        mval = m
-        weight = mval * 9.81
-        canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.2f} N", fill='white')
-        canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s  a={a:.2f} m/s^2")
+        draw_scene(a)
 
         # energies (spring PE + gravitational PE if enabled)
         ke = 0.5 * m * state['v']**2
@@ -221,7 +229,10 @@ def open_energy_window(master=None):
     def start():
         if not state.get('running'):
             state['running'] = True
-            step()
+            state['just_started'] = True
+            draw_scene()
+            win.after_idle(lambda: draw_scene())
+            win.after(50, step)
 
     def stop():
         state['running'] = False
