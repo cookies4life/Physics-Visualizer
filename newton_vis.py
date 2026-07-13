@@ -9,7 +9,7 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
     """Create a window showing a block on an incline with force vectors and motion."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title(title)
-    win.geometry("980x680")
+    win.geometry("1000x900")
 
     header = ttk.Frame(win)
     header.pack(fill=tk.X)
@@ -66,9 +66,9 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
     ttk.Checkbutton(frm, text="Show normal force", variable=show_normal).grid(row=7, column=0, columnspan=3, sticky='w')
     ttk.Checkbutton(frm, text="Show friction force", variable=show_friction).grid(row=8, column=0, columnspan=3, sticky='w')
 
-    canvas = tk.Canvas(frm, bg='white', height=420)
+    canvas = tk.Canvas(frm, bg='white', height=700)
     canvas.grid(row=9, column=0, columnspan=2, sticky='nsew', pady=8)
-    graph_canvas = tk.Canvas(frm, bg='white', width=320, height=420)
+    graph_canvas = tk.Canvas(frm, bg='white', width=100, height=700)
     graph_canvas.grid(row=9, column=2, padx=(8, 0), sticky='nsew')
     frm.columnconfigure(1, weight=1)
     frm.columnconfigure(2, weight=0)
@@ -81,7 +81,7 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
     # Reset the incline demo back to the starting position.
     def reset():
         if mode == 'push':
-            state['s'] = 220.0
+            state['s'] = 350.0
         else:
             state['s'] = 0.0
         state['v'] = 0.0
@@ -110,12 +110,12 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
     # Draw the motion graph showing position and velocity over time.
     def draw_graph():
         graph_canvas.delete('all')
-        width = 320
-        height = 420
-        margin = 40
-        graph_canvas.create_rectangle(margin, margin, width - 10, height - 10, outline='black')
-        graph_canvas.create_line(margin, height - margin, width - 10, height - margin, arrow='last')
-        graph_canvas.create_line(margin, height - margin, margin, margin + 10, arrow='last')
+        width = 100
+        height = 700
+        margin = 15
+        graph_canvas.create_rectangle(margin, margin, width - 5, height - 5, outline='black')
+        graph_canvas.create_line(margin, height - margin, width - 5, height - margin, arrow='last')
+        graph_canvas.create_line(margin, height - margin, margin, margin, arrow='last')
         graph_canvas.create_text(width / 2, height - 15, text='time', anchor='center')
         graph_canvas.create_text(15, height / 2, text='value', anchor='center', angle=90)
 
@@ -127,19 +127,19 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
         for label, color, key in [('s', 'blue', 's'), ('v', 'red', 'v')]:
             points = []
             for idx, point in enumerate(history):
-                x = margin + (width - margin - 10) * idx / max_t
-                y = height - margin - (height - margin - 10) * abs(point[key]) / (max_s if key == 's' else max_v)
+                x = margin + (width - margin - 5) * idx / max_t if max_t > 0 else margin
+                y = height - margin - (height - margin - 5) * abs(point[key]) / (max_s if key == 's' else max_v)
                 points.extend([x, y])
-            graph_canvas.create_line(*points, fill=color, smooth=True, width=2)
-            graph_canvas.create_text(width - 30, margin + 10 + (0 if key == 's' else 20), text=label, fill=color, anchor='w')
+            if len(points) >= 4:
+                graph_canvas.create_line(*points, fill=color, smooth=True, width=1)
 
     # Draw the entire scene with the incline, block, and force arrows.
     def draw_scene(a, g_par, N, friction_mag):
         canvas.delete('all')
         angle = math.radians(incline_angle.get())
-        base_x = 100
-        base_y = 340
-        length = 440
+        base_x = 80
+        base_y = 500
+        length = 700
         x2, y2 = draw_wooden_incline(angle, base_x, base_y, length)
 
         dx = x2 - base_x
@@ -152,17 +152,17 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
 
         block_x = base_x + state['s'] * dir_x
         block_y = base_y + state['s'] * dir_y
-        box_w = 140
-        box_h = 70
-        box_cx = block_x + normal_x * (box_h / 2 + 10)
-        box_cy = block_y + normal_y * (box_h / 2 + 10)
+        box_w = 80
+        box_h = 40
+        box_cx = block_x + normal_x * (box_h / 2)
+        box_cy = block_y + normal_y * (box_h / 2)
         canvas.create_rectangle(
             box_cx - box_w / 2,
             box_cy - box_h / 2,
             box_cx + box_w / 2,
             box_cy + box_h / 2,
             fill='gray', outline='black', width=2)
-        canvas.create_text(box_cx, box_cy, text=f"m={mass.get():.2f} kg", fill='white')
+        canvas.create_text(box_cx, box_cy, text=f"m={mass.get():.2f} kg", fill='white', font=('Arial', 8))
 
         if show_weight.get():
             wx = box_cx
@@ -221,7 +221,7 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
         a = (net_downhill + friction) / m
         state['v'] += a * 0.03
         state['s'] += state['v'] * 0.03
-        max_s = 220.0
+        max_s = 350.0
         if state['s'] < 0.0:
             state['s'] = 0.0
             state['v'] = 0.0
