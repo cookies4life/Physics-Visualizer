@@ -43,7 +43,12 @@ def open_momentum_window(master=None):
     v1 = tk.DoubleVar(value=10.0)
     m2 = tk.DoubleVar(value=1.0)
     v2 = tk.DoubleVar(value=-2.0)
-    elastic = tk.BooleanVar(value=True)
+
+    # Switch between elastic and inelastic collisions.
+    # - Elastic: momentum + kinetic energy conserved.
+    # - Inelastic: momentum conserved, kinetic energy not conserved.
+    collision_mode = tk.StringVar(value='elastic')
+
 
     def _bind_display(var, display_var):
         def _update(*_args):
@@ -61,9 +66,24 @@ def open_momentum_window(master=None):
     _bind_display(m2, m2_display)
     _bind_display(v2, v2_display)
 
+    # --- Top equations (plain text) ---
+    eq_frame = ttk.Frame(frm)
+    eq_frame.pack(fill=tk.X, pady=(0, 4))
+
+    eq_text = (
+        "Conservation of momentum:  m1·v1 + m2·v2 = m1·u1 + m2·u2\n"
+        "Collision modes:\n"
+        "  Elastic:     u1 = ((m1-m2)v1 + 2m2 v2)/(m1+m2),  u2 = ((m2-m1)v2 + 2m1 v1)/(m1+m2)\n"
+        "  Inelastic:   u1 = u2 = (m1·v1 + m2·v2)/(m1+m2)"
+    )
+    ttk.Label(eq_frame, text=eq_text, justify='left').pack(anchor='w')
+
     control = ttk.Frame(frm)
     control.pack(fill=tk.X)
+
     ttk.Label(control, text='m1').pack(side=tk.LEFT)
+
+
     ttk.Scale(control, from_=0.1, to=20, variable=m1, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
     ttk.Label(control, textvariable=m1_display).pack(side=tk.LEFT, padx=6)
     ttk.Label(control, text='v1').pack(side=tk.LEFT)
@@ -75,20 +95,32 @@ def open_momentum_window(master=None):
     ttk.Label(control, text='v2').pack(side=tk.LEFT)
     ttk.Scale(control, from_=-50, to=50, variable=v2, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
     ttk.Label(control, textvariable=v2_display).pack(side=tk.LEFT, padx=6)
-    ttk.Checkbutton(control, text='Elastic', variable=elastic).pack(side=tk.LEFT, padx=6)
+    # Collision mode buttons
+    ttk.Button(
+        control,
+        text='Elastic collision',
+        command=lambda: collision_mode.set('elastic'),
+    ).pack(side=tk.LEFT, padx=6)
+
+    ttk.Button(
+        control,
+        text='Inelastic collision',
+        command=lambda: collision_mode.set('inelastic'),
+    ).pack(side=tk.LEFT, padx=6)
+
 
     canvas = tk.Canvas(frm, bg='white', height=160)
     canvas.pack(fill=tk.BOTH, expand=True, pady=8)
 
-    # positions in pixels
-    # Note: box widths are dynamic based on mass.
+    # positions in pixels (will be recomputed in reset based on current canvas width)
     state = {
-        'x1': 120.0,  # left edge for box 1
-        'x2': 740.0,  # left edge for box 2
+        'x1': 0.0,
+        'x2': 0.0,
         'v1': v1.get(),
         'v2': v2.get(),
         'running': False,
     }
+
 
     def box_size(mass_value: float) -> tuple[float, float]:
         """Return the width and height of a block based on its mass.
@@ -110,18 +142,40 @@ def open_momentum_window(master=None):
         V1 = state['v1']
         M2 = m2.get()
         V2 = state['v2']
-        if elastic.get():
+
+        mode = collision_mode.get()
+        if mode == 'elastic':
             u1 = (V1 * (M1 - M2) + 2 * M2 * V2) / (M1 + M2)
             u2 = (V2 * (M2 - M1) + 2 * M1 * V1) / (M1 + M2)
         else:
+            # Perfectly inelastic collision (blocks stick together in 1D).
             u = (M1 * V1 + M2 * V2) / (M1 + M2)
             u1 = u2 = u
         return u1, u2
 
+
     def reset():
         """Reset the collision scene to its initial positions and velocities."""
-        state['x1'] = 120.0
-        state['x2'] = 740.0
+        # Recompute centered positions based on current canvas width and box sizes.
+        canvas_width = canvas.winfo_width() or 900
+        region_left = 40
+        region_right = max(region_left + 200, canvas_width - 40)
+        region_width = region_right - region_left
+
+        w1, _h1 = box_size(m1.get())
+        w2, _h2 = box_size(m2.get())
+
+        # Keep a visible gap between the blocks (scale with widths).
+        gap = max(30.0, 0.15 * (w1 + w2))
+        total_width = w1 + w2 + gap
+
+        # Center everything within the canvas region.
+        x1_left = region_left + max(0.0, (region_width - total_width) / 2.0)
+        x2_left = x1_left + w1 + gap
+
+        state['x1'] = x1_left
+        state['x2'] = x2_left
+
         state['v1'] = v1.get()
         state['v2'] = v2.get()
         state['running'] = False
@@ -135,9 +189,26 @@ def open_momentum_window(master=None):
         state['x1'] += state['v1'] * dt * 10
         state['x2'] += state['v2'] * dt * 10
 
+        # Soft bounds to keep blocks visible (no physics, just clipping).
+        canvas_width = canvas.winfo_width() or 900
+        region_left = 40
+        region_right = max(region_left + 200, canvas_width - 40)
+
+
         # detect collision (simple overlap)
         w1, _h1 = box_size(m1.get())
         w2, _h2 = box_size(m2.get())
+
+        # (Re)use consistent region bounds for drawing.
+        # This helps avoid awkward mid-screen line/box mismatch on resize.
+        region_width = region_right - region_left
+        baseline_x_left = region_left
+        baseline_x_right = region_right
+
+        # Clamp positions so blocks remain within the visible region.
+        state['x1'] = min(max(state['x1'], baseline_x_left), baseline_x_right - w1)
+        state['x2'] = min(max(state['x2'], baseline_x_left), baseline_x_right - w2)
+
 
         if state['x1'] + w1 >= state['x2']:
 
@@ -149,12 +220,23 @@ def open_momentum_window(master=None):
 
         # draw
         canvas.delete('all')
-        canvas.create_line(0, 140, 1000, 140, fill='sienna')
+
+        canvas_width = canvas.winfo_width() or 900
+        region_left = 40
+        region_right = max(region_left + 200, canvas_width - 40)
+        baseline_y = 140
+
+        canvas.create_line(region_left, baseline_y, region_right, baseline_y, fill='sienna')
+
 
         # Add labels above each block so the user can identify them easily.
         ttk_text_y = 40
-        canvas.create_text(260, ttk_text_y, text="Block 1", fill='black', anchor='center')
-        canvas.create_text(740, ttk_text_y, text="Block 2", fill='black', anchor='center')
+        # Labels follow the blocks so they stay centered as the canvas resizes.
+        w1_label, _ = box_size(m1.get())
+        w2_label, _ = box_size(m2.get())
+        canvas.create_text(state['x1'] + w1_label / 2, ttk_text_y, text="Block 1", fill='black', anchor='center')
+        canvas.create_text(state['x2'] + w2_label / 2, ttk_text_y, text="Block 2", fill='black', anchor='center')
+
 
 
         # Draw block 1 and its velocity arrow.
@@ -163,8 +245,9 @@ def open_momentum_window(master=None):
         x1_left = state['x1']
         x1_right = x1_left + w1
         # Scale TOTAL size: use dynamic height too.
-        y_top1 = 140 - h1
-        y_bottom1 = 140
+        y_top1 = baseline_y - h1
+        y_bottom1 = baseline_y
+
         canvas.create_rectangle(x1_left, y_top1, x1_right, y_bottom1, fill='skyblue')
 
 
@@ -217,8 +300,9 @@ def open_momentum_window(master=None):
         x2_left = state['x2']
         x2_right = x2_left + w2
         # Scale TOTAL size: use dynamic height too.
-        y_top2 = 140 - h2
-        y_bottom2 = 140
+        y_top2 = baseline_y - h2
+        y_bottom2 = baseline_y
+
         canvas.create_rectangle(x2_left, y_top2, x2_right, y_bottom2, fill='orange')
 
 
