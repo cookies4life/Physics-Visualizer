@@ -270,11 +270,20 @@ def open_newton_window(master=None):
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Newton's Laws — Force Visualizer")
     win.geometry("900x420")
-    try:
-        # macOS/Tk: make the window fill the entire screen area
-        win.state('zoomed')
-    except Exception:
-        pass
+
+    def _maximize_or_fullscreen_max(win_obj: tk.Toplevel):
+        """Best-effort maximize for cross-platform Tk.
+
+        Use after() so the window manager has finished creating the window.
+        """
+        try:
+            win_obj.state('zoomed')
+        except Exception:
+            pass
+
+    # Start as maximized.
+    win.after(100, lambda: _maximize_or_fullscreen_max(win))
+
 
 
     header = ttk.Frame(win)

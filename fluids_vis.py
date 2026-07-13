@@ -10,6 +10,16 @@ def open_fluids_window(master=None):
     win.title("Fluids & Statics — Buoyancy & Pressure")
     win.geometry("800x420")
 
+    def _maximize_or_fullscreen_max(win_obj: tk.Toplevel):
+        """Best-effort maximize for cross-platform Tk."""
+        try:
+            win_obj.state('zoomed')
+        except Exception:
+            pass
+
+    win.after(100, lambda: _maximize_or_fullscreen_max(win))
+
+
     header = ttk.Frame(win)
     header.pack(fill=tk.X)
     ttk.Label(header, text="Fluids & Statics — Buoyancy & Pressure", font=(None, 16, 'bold')).pack(anchor='n')

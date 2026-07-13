@@ -10,14 +10,23 @@ def open_kinematics_window(master=None):
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Kinematics — Projectile Motion")
     win.geometry("1200x640")
-    try:
-        # macOS/Tk: make the window fill the entire screen area
-        win.state('zoomed')
-    except Exception:
-        pass
+
+    def _maximize_or_fullscreen_max(win_obj: tk.Toplevel):
+        """Best-effort maximize for cross-platform Tk.
+
+        Use after() so the window manager has finished creating the window.
+        """
+        try:
+            win_obj.state('zoomed')
+        except Exception:
+            pass
+
+    # Start as maximized.
+    win.after(100, lambda: _maximize_or_fullscreen_max(win))
 
 
     # Create the top title and description for the visualization.
+
     header = ttk.Frame(win)
     header.pack(fill=tk.X)
     ttk.Label(header, text="Kinematics — Projectile Motion", font=(None, 16, 'bold')).pack(anchor='n')
