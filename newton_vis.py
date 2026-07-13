@@ -75,9 +75,10 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
     ttk.Checkbutton(frm, text="Show normal force", variable=show_normal).grid(row=9, column=0, columnspan=3, sticky='w')
     ttk.Checkbutton(frm, text="Show friction force", variable=show_friction).grid(row=10, column=0, columnspan=3, sticky='w')
 
-    canvas = tk.Canvas(frm, bg='white', height=480)
+    canvas = tk.Canvas(frm, bg='white', width=940, height=480)
     canvas.grid(row=11, column=0, columnspan=3, sticky='nsew', pady=8)
-    frm.columnconfigure(1, weight=1)
+    frm.columnconfigure(0, weight=1)
+    frm.rowconfigure(11, weight=1)
 
     # Store the current simulation state.
     state = {'s': 0.0, 'v': 0.0}
@@ -116,7 +117,8 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
         angle = math.radians(incline_angle.get())
         base_x = 75
         base_y = 350
-        length = 700
+        visible_width = canvas.winfo_width() or 940
+        length = max(700, visible_width - base_x - 40)
         x2, y2 = draw_wooden_incline(angle, base_x, base_y, length)
 
         dx = x2 - base_x
