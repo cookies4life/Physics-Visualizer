@@ -23,7 +23,10 @@ def open_energy_window(master=None):
             pass
 
     # Start as maximized.
-    win.after(0, lambda: _maximize_or_fullscreen_max(win))
+    # Delay slightly so Tk has created/mapped the window; this avoids a
+    # visible jump/flash on macOS.
+    win.after(100, lambda: _maximize_or_fullscreen_max(win))
+
 
 
 
@@ -288,9 +291,11 @@ def open_energy_window(master=None):
         state['running'] = False
 
     # Add the reset, start, and stop buttons for user control.
-    ttk.Button(frm, text='Reset', command=reset).pack(side=tk.LEFT, padx=6)
-    ttk.Button(frm, text='Start', command=start).pack(side=tk.LEFT, padx=6)
-    ttk.Button(frm, text='Stop', command=stop).pack(side=tk.LEFT)
+    # Make them expand to fill available height/width.
+    ttk.Button(frm, text='Reset', command=reset).pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=6)
+    ttk.Button(frm, text='Start', command=start).pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=6)
+    ttk.Button(frm, text='Stop', command=stop).pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=6)
+
 
     # Reset the view whenever the user changes a parameter so the new setup is displayed immediately.
     def on_param_change(*args):

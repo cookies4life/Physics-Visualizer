@@ -32,15 +32,16 @@ class MainMenu:
 
 		# Kinematics button
 		btn_kin = ttk.Button(frm, text="Kinematics", command=self.open_kinematics)
-		btn_kin.pack(fill=tk.X, pady=5)
+		btn_kin.pack(fill=tk.BOTH, expand=True, pady=5)
 
 		# Topic buttons
-		ttk.Button(frm, text="Newton's Laws", command=self.open_newton).pack(fill=tk.X, pady=5)
-		ttk.Button(frm, text="Work, Energy & Power", command=self.open_energy).pack(fill=tk.X, pady=5)
-		ttk.Button(frm, text="Momentum & Collisions", command=self.open_momentum).pack(fill=tk.X, pady=5)
-		ttk.Button(frm, text="Rotational Motion", command=self.open_rotation).pack(fill=tk.X, pady=5)
-		ttk.Button(frm, text="Fluids & Statics", command=self.open_fluids).pack(fill=tk.X, pady=5)
-		ttk.Button(frm, text="Quantum Mechanics", command=self.open_quantum).pack(fill=tk.X, pady=5)
+		ttk.Button(frm, text="Newton's Laws", command=self.open_newton).pack(fill=tk.BOTH, expand=True, pady=5)
+		ttk.Button(frm, text="Work, Energy & Power", command=self.open_energy).pack(fill=tk.BOTH, expand=True, pady=5)
+		ttk.Button(frm, text="Momentum & Collisions", command=self.open_momentum).pack(fill=tk.BOTH, expand=True, pady=5)
+		ttk.Button(frm, text="Rotational Motion", command=self.open_rotation).pack(fill=tk.BOTH, expand=True, pady=5)
+		ttk.Button(frm, text="Fluids & Statics", command=self.open_fluids).pack(fill=tk.BOTH, expand=True, pady=5)
+		ttk.Button(frm, text="Quantum Mechanics", command=self.open_quantum).pack(fill=tk.BOTH, expand=True, pady=5)
+
 
 		# Quit
 		ttk.Button(frm, text="Quit", command=self.root.destroy).pack(side=tk.BOTTOM, pady=10)

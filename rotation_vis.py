@@ -104,7 +104,9 @@ def open_rotation_window(master=None):
 
         win.after(int(dt*1000), step)
 
-    ttk.Button(frm, text='Start', command=step).grid(row=4, column=0, sticky='w')
-    ttk.Button(frm, text='Reset', command=lambda: state.update({'omega': 0.0, 'theta': 0.0, 't': 0.0}) or energy_hist['rot'].clear() or energy_hist['t'].clear()).grid(row=4, column=1)
+    ttk.Button(frm, text='Start', command=step).grid(row=4, column=0, sticky='nsew')
+    ttk.Button(frm, text='Reset', command=lambda: state.update({'omega': 0.0, 'theta': 0.0, 't': 0.0}) or energy_hist['rot'].clear() or energy_hist['t'].clear()).grid(row=4, column=1, sticky='nsew')
+    frm.rowconfigure(4, weight=1)
+
 
     step()

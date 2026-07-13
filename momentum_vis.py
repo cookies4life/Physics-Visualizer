@@ -21,7 +21,8 @@ def open_momentum_window(master=None):
             pass
 
     # Start as maximized.
-    win.after(0, lambda: _maximize_or_fullscreen_max(win))
+    win.after(100, lambda: _maximize_or_fullscreen_max(win))
+
 
 
 
@@ -265,8 +266,9 @@ def open_momentum_window(master=None):
 
             win.after(int(dt * 1000), step)
 
-    ttk.Button(frm, text='Reset', command=reset).pack(side=tk.LEFT, padx=6)
-    ttk.Button(frm, text='Start', command=step).pack(side=tk.LEFT)
+    ttk.Button(frm, text='Reset', command=reset).pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=6)
+    ttk.Button(frm, text='Start', command=step).pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=6, pady=6)
+
 
     reset()
 

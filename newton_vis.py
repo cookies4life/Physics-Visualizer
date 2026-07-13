@@ -235,9 +235,14 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
         if running['on']:
             win.after(30, advance)
 
-    ttk.Button(frm, text='Reset', command=reset).grid(row=10, column=0, sticky='w')
-    ttk.Button(frm, text='Start', command=lambda: running.update({'on': True}) or advance()).grid(row=10, column=1)
-    ttk.Button(frm, text='Stop', command=lambda: running.update({'on': False})).grid(row=10, column=2, sticky='e')
+    ttk.Button(frm, text='Reset', command=reset).grid(row=10, column=0, sticky='nsew')
+    ttk.Button(frm, text='Start', command=lambda: running.update({'on': True}) or advance()).grid(row=10, column=1, sticky='nsew')
+    ttk.Button(frm, text='Stop', command=lambda: running.update({'on': False})).grid(row=10, column=2, sticky='nsew')
+    frm.rowconfigure(10, weight=1)
+    frm.columnconfigure(0, weight=1)
+    frm.columnconfigure(1, weight=1)
+    frm.columnconfigure(2, weight=1)
+
 
     reset()
 
@@ -265,6 +270,12 @@ def open_newton_window(master=None):
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Newton's Laws — Force Visualizer")
     win.geometry("900x420")
+    try:
+        # macOS/Tk: make the window fill the entire screen area
+        win.state('zoomed')
+    except Exception:
+        pass
+
 
     header = ttk.Frame(win)
     header.pack(fill=tk.X)
@@ -385,10 +396,16 @@ def open_newton_window(master=None):
         if running['on']:
             win.after(30, advance)
 
-    ttk.Button(frm, text='Reset', command=reset).grid(row=9, column=0, sticky='w')
-    ttk.Button(frm, text='Start', command=lambda: running.update({'on': True}) or advance()).grid(row=9, column=1)
-    ttk.Button(frm, text='Stop', command=lambda: running.update({'on': False})).grid(row=9, column=2, sticky='e')
-    ttk.Button(frm, text='Open push-up incline demo', command=lambda: open_push_up_incline_window(win)).grid(row=10, column=0, columnspan=3, pady=4)
-    ttk.Button(frm, text='Open slide-down incline demo', command=lambda: open_slide_down_incline_window(win)).grid(row=11, column=0, columnspan=3, pady=4)
+    ttk.Button(frm, text='Reset', command=reset).grid(row=9, column=0, sticky='nsew')
+    ttk.Button(frm, text='Start', command=lambda: running.update({'on': True}) or advance()).grid(row=9, column=1, sticky='nsew')
+    ttk.Button(frm, text='Stop', command=lambda: running.update({'on': False})).grid(row=9, column=2, sticky='nsew')
+    frm.rowconfigure(9, weight=1)
+    frm.columnconfigure(0, weight=1)
+    frm.columnconfigure(1, weight=1)
+    frm.columnconfigure(2, weight=1)
+
+    ttk.Button(frm, text='Open push-up incline demo', command=lambda: open_push_up_incline_window(win)).grid(row=10, column=0, columnspan=3, sticky='nsew', pady=4)
+    ttk.Button(frm, text='Open slide-down incline demo', command=lambda: open_slide_down_incline_window(win)).grid(row=11, column=0, columnspan=3, sticky='nsew', pady=4)
+
 
     reset()

@@ -10,6 +10,12 @@ def open_kinematics_window(master=None):
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Kinematics — Projectile Motion")
     win.geometry("1200x640")
+    try:
+        # macOS/Tk: make the window fill the entire screen area
+        win.state('zoomed')
+    except Exception:
+        pass
+
 
     # Create the top title and description for the visualization.
     header = ttk.Frame(win)
@@ -248,8 +254,9 @@ def open_kinematics_window(master=None):
         draw_on(graph_vt, vs, 'blue', 'speed (m/s)', '|v|(t) — Speed vs Time')
         draw_on(graph_at, as_, 'red', 'acceleration (m/s^2)', '|a|(t) — Acceleration vs Time')
 
-    ttk.Button(btn_frame, text="Start", command=start).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
-    ttk.Button(btn_frame, text="Reset", command=reset).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=4)
+    ttk.Button(btn_frame, text="Start", command=start).pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=4)
+    ttk.Button(btn_frame, text="Reset", command=reset).pack(side=tk.LEFT, expand=True, fill=tk.BOTH, padx=4)
+
 
     ttk.Label(controls, text="Notes:").pack(pady=(12,0))
     ttk.Label(controls, wraplength=220, text="This demo shows projectile motion and live plots of x(t), |v|(t), and |a|(t). Use sliders to change parameters.").pack()
