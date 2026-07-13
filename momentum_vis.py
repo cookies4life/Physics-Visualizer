@@ -7,6 +7,12 @@ def open_momentum_window(master=None):
     win.title("Momentum & Collisions — Animated 1D Collision")
     win.geometry("1000x300")
 
+    # Header and description
+    header = ttk.Frame(win)
+    header.pack(fill=tk.X)
+    ttk.Label(header, text="Momentum & Collisions — 1D Collision", font=(None, 16, 'bold')).pack(anchor='n')
+    ttk.Label(header, text="Animated 1D collision showing conservation of momentum. Velocities shown are in m/s; positions are in pixels for visualization.", wraplength=980).pack(anchor='n')
+
     frm = ttk.Frame(win, padding=8)
     frm.pack(fill=tk.BOTH, expand=True)
 

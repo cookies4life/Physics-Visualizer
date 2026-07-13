@@ -8,6 +8,12 @@ def open_quantum_window(master=None):
     win.title("Quantum Mechanics — Particle in a Box (1D)")
     win.geometry("900x420")
 
+
+    header = ttk.Frame(win)
+    header.pack(fill=tk.X)
+    ttk.Label(header, text="Quantum Mechanics — Particle in a Box (1D)", font=(None, 16, 'bold')).pack(anchor='n')
+    ttk.Label(header, text="Displays the real part of the stationary state wavefunction and the probability density |ψ(x,t)|^2. Position axis is in meters; probability density units are 1/m.", wraplength=860).pack(anchor='n')
+
     frm = ttk.Frame(win, padding=8)
     frm.pack(fill=tk.BOTH, expand=True)
 
@@ -59,7 +65,10 @@ def open_quantum_window(master=None):
             x1, y1 = points_prob[i-1]
             x2, y2 = points_prob[i]
             canvas.create_line(x1, y1, x2, y2, fill='green')
+        # axis labels (metricized)
         canvas.create_text(10, 10, anchor='nw', text=f"n={nval}  L={Lval:.2f} m  t={state['t']:.2f}")
+        canvas.create_text(20, h//2, text='Probability density (1/m)', angle=90)
+        canvas.create_text(w//2, h-10, text='position (m)')
 
     def animate():
         state['t'] += 0.05
