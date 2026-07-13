@@ -8,7 +8,7 @@ import math
 def open_rotation_window(master=None):
     """Create the rotational motion demo with a spinning disk and live physics values."""
     win = tk.Toplevel(master) if master else tk.Tk()
-    win.title("Rotational Motion — Spinning Disk")
+    win.title("Circular Motion — Spinning Disk")
     win.geometry("700x420")
 
     def _maximize_or_fullscreen_max(win_obj: tk.Toplevel):
