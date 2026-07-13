@@ -1,3 +1,5 @@
+"""Main menu for launching the different physics visualizations."""
+
 import tkinter as tk
 from tkinter import ttk
 import kinematics_vis
@@ -11,13 +13,17 @@ import quantum_vis
 
 
 class MainMenu:
+	"""Create the main window and connect each button to a topic-specific demo."""
+
 	def __init__(self):
+		"""Initialize the application window and build the menu UI."""
 		self.root = tk.Tk()
 		self.root.title("Physics Visualizer")
 		self.root.geometry("800x600")
 		self._build()
 
 	def _build(self):
+		"""Create the buttons and labels that let the user choose a physics topic."""
 		frm = ttk.Frame(self.root, padding=20)
 		frm.pack(fill=tk.BOTH, expand=True)
 
@@ -40,25 +46,33 @@ class MainMenu:
 		ttk.Button(frm, text="Quit", command=self.root.destroy).pack(side=tk.BOTTOM, pady=10)
 
 	def open_kinematics(self):
+		"""Open the kinematics projectile demo."""
 		kinematics_vis.open_kinematics_window(self.root)
 
 	def open_newton(self):
+		"""Open the Newton's laws force demo."""
 		newton_vis.open_newton_window(self.root)
 
 	def open_energy(self):
+		"""Open the work, energy, and power demo."""
 		energy_vis.open_energy_window(self.root)
 
 	def open_momentum(self):
+		"""Open the momentum and collision demo."""
 		momentum_vis.open_momentum_window(self.root)
 
 	def open_rotation(self):
+		"""Open the rotational motion demo."""
 		rotation_vis.open_rotation_window(self.root)
 
 	def open_fluids(self):
+		"""Open the fluids and buoyancy demo."""
 		fluids_vis.open_fluids_window(self.root)
 
 	def open_quantum(self):
+		"""Open the quantum mechanics demo."""
 		quantum_vis.open_quantum_window(self.root)
 
 	def run(self):
+		"""Start the Tkinter main event loop."""
 		self.root.mainloop()

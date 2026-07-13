@@ -1,8 +1,11 @@
+"""Fluids and statics visualization for buoyancy and pressure."""
+
 import tkinter as tk
 from tkinter import ttk
 
 
 def open_fluids_window(master=None):
+    """Create the buoyancy and pressure simulation window."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Fluids & Statics — Buoyancy & Pressure")
     win.geometry("800x420")
@@ -56,6 +59,7 @@ def open_fluids_window(master=None):
     state = {'y': 100.0, 'vy': 0.0}
 
     def update():
+        """Recalculate pressure and buoyant force and redraw the scene."""
         d = depth.get(); R = rho.get(); V = vol.get(); m = mass.get()
         p = R * 9.81 * d
         buoy = R * 9.81 * V
@@ -64,6 +68,7 @@ def open_fluids_window(master=None):
         draw()
 
     def draw():
+        """Draw the fluid column, pressure bars, and floating/sinking object."""
         canvas.delete('all')
         w = int(canvas.winfo_width() or 760)
         h = int(canvas.winfo_height() or 260)

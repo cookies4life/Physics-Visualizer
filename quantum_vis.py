@@ -1,9 +1,12 @@
+"""Quantum mechanics visualization for a particle in a 1D box."""
+
 import tkinter as tk
 from tkinter import ttk
 import math
 
 
 def open_quantum_window(master=None):
+    """Create the quantum wavefunction visualization window."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Quantum Mechanics — Particle in a Box (1D)")
     win.geometry("900x420")
@@ -34,12 +37,14 @@ def open_quantum_window(master=None):
     state = {'t': 0.0}
 
     def psi(nval, x, Lval, t):
+        """Return the real part of the wavefunction at a point in the box."""
         # real part with simple time dependence cos(omega t), omega ~ n^2
         spatial = math.sqrt(2.0 / Lval) * math.sin(nval * math.pi * x / Lval)
         omega = (nval**2)
         return spatial * math.cos(omega * t)
 
     def draw():
+        """Draw the wavefunction and probability density on the canvas."""
         canvas.delete('all')
         Lval = L.get(); nval = n.get()
         w = int(canvas.winfo_width() or 800)
@@ -71,6 +76,7 @@ def open_quantum_window(master=None):
         canvas.create_text(w//2, h-10, text='position (m)')
 
     def animate():
+        """Advance the time variable and repeatedly redraw the quantum visualization."""
         state['t'] += 0.05
         draw()
         win.after(50, animate)

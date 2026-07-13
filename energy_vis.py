@@ -1,22 +1,27 @@
+"""Mass-spring energy visualization with an animated spring and live energy graph."""
+
 import tkinter as tk
 from tkinter import ttk
 import math
-#energy vis spring vis
 
+# Energy visualization window for the mass-spring simulation.
 def open_energy_window(master=None):
+    """Create the spring-mass demo window with controls, animation, and energy graphs."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Work, Energy & Power — Mass-Spring Demo")
     win.geometry("800x360")
 
-    # Header and description
+    # Create the main window title and descriptive header text.
     header = ttk.Frame(win)
     header.pack(fill=tk.X)
     ttk.Label(header, text="Work, Energy & Power — Mass-Spring Demo", font=(None, 16, 'bold')).pack(anchor='n')
     ttk.Label(header, text="Animated mass-spring system showing kinetic and potential energies (in joules) over time.", wraplength=780).pack(anchor='n')
 
+    # Create the main content frame that holds the controls, animation canvas, and graph.
     frm = ttk.Frame(win, padding=8)
     frm.pack(fill=tk.BOTH, expand=True)
 
+    # Define the simulation parameters that can be adjusted from the UI.
     mass = tk.DoubleVar(value=1.0)
     k = tk.DoubleVar(value=50.0)
     x0 = tk.DoubleVar(value=0.5)
@@ -24,6 +29,7 @@ def open_energy_window(master=None):
     def _format_two_decimals(var):
         return f"{var.get():.2f}"
 
+    # Build the control panel with sliders and switches for the simulation.
     control = ttk.Frame(frm)
     control.pack(fill=tk.X)
 
@@ -41,6 +47,7 @@ def open_energy_window(master=None):
     x0.trace_add("write", _update_value_display)
     _update_value_display()
 
+    # Add the mass, spring constant, and initial displacement controls.
     ttk.Label(control, text='Mass (kg)').pack(side=tk.LEFT)
     ttk.Scale(control, from_=0.1, to=10, variable=mass, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
     ttk.Label(control, textvariable=mass_display).pack(side=tk.LEFT, padx=8)
@@ -54,7 +61,7 @@ def open_energy_window(master=None):
     ttk.Scale(control, from_=-2.0, to=2.0, variable=x0, orient=tk.HORIZONTAL).pack(side=tk.LEFT, fill=tk.X, expand=True)
     ttk.Label(control, textvariable=x0_display).pack(side=tk.LEFT, padx=8)
     
-    # Gravity and air resistance controls
+    # Add optional gravity and damping controls for the simulation.
     gravity = tk.BooleanVar(value=False)
     air = tk.BooleanVar(value=False)
     b = tk.DoubleVar(value=0.5)  # damping coefficient
@@ -71,9 +78,11 @@ def open_energy_window(master=None):
     _update_b_display()
     ttk.Label(control, textvariable=b_display).pack(side=tk.LEFT, padx=8)
 
+    # Create the main canvas where the spring-mass system is drawn.
     canvas = tk.Canvas(frm, bg='white', height=260)
     canvas.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
 
+    # Determine the horizontal center of the canvas after the layout has settled.
     def _get_canvas_center():
         win.update_idletasks()
         canvas.update_idletasks()
@@ -85,14 +94,16 @@ def open_energy_window(master=None):
     help_text = ttk.Label(frm, text="The spring coil shows the mass stretching and compressing over time. The two curves below are energy traces: blue is kinetic energy and orange is potential energy stored in the spring.", wraplength=760, justify=tk.LEFT)
     help_text.pack(anchor='w', padx=8, pady=(4, 6))
 
+    # Create the energy graph canvas shown beneath the animation.
     graph = tk.Canvas(frm, bg='white', height=100)
     graph.pack(fill=tk.BOTH)
 
+    # Store the current physics state and the energy history for plotting.
     state = {'x': x0.get(), 'v': 0.0, 'running': False, 'deformed': False, 'just_started': False}
     energy_history = {'ke': [], 'pe': [], 't': []}
 
+    # Draw the spring shape between the anchor point and the mass.
     def draw_spring(cnv, cx, y1, y2, deformed=False):
-        # draw a vertical spring from y1 (anchor) to y2 (top of mass)
         if deformed:
             # draw a red stretched/broken spring
             cnv.create_line(cx, y1, cx, y2, fill='red', width=3, dash=(4,4))
@@ -113,6 +124,7 @@ def open_energy_window(master=None):
             cnv.create_line(points[i][0], points[i][1], points[i+1][0], points[i+1][1], fill='black', width=2)
         cnv.create_line(points[-1][0], points[-1][1], cx, y2, fill='black', width=2)
 
+    # Redraw the full spring-mass scene using the current simulation state.
     def draw_scene(a=None):
         canvas.delete('all')
         cx = _get_canvas_center()
@@ -131,6 +143,7 @@ def open_energy_window(master=None):
         else:
             canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s")
 
+    # Reset the simulation back to the initial displacement and clear the graph history.
     def reset():
         state['x'] = x0.get()
         state['v'] = 0.0
@@ -142,6 +155,7 @@ def open_energy_window(master=None):
         draw_energy_graph()
         win.after_idle(lambda: (draw_scene(), draw_energy_graph()))
 
+    # Advance the simulation by one time step and redraw the animation.
     def step():
         if not state.get('running'):
             return
@@ -195,6 +209,7 @@ def open_energy_window(master=None):
         if state.get('running'):
             win.after(int(dt*1000), step)
 
+    # Plot the kinetic and potential energy traces over time.
     def draw_energy_graph():
         graph.delete('all')
         ke = energy_history['ke']; pe = energy_history['pe']; t = energy_history['t']
@@ -226,6 +241,7 @@ def open_energy_window(master=None):
         graph.create_text(pad-20, h//2, text='Energy (J)', angle=90)
         graph.create_text(w//2, h-pad+12, text='time (s)')
 
+    # Start the animation from the current initial state.
     def start():
         if not state.get('running'):
             state['running'] = True
@@ -234,14 +250,16 @@ def open_energy_window(master=None):
             win.after_idle(lambda: draw_scene())
             win.after(50, step)
 
+    # Pause the simulation without resetting the current state.
     def stop():
         state['running'] = False
 
+    # Add the reset, start, and stop buttons for user control.
     ttk.Button(frm, text='Reset', command=reset).pack(side=tk.LEFT, padx=6)
     ttk.Button(frm, text='Start', command=start).pack(side=tk.LEFT, padx=6)
     ttk.Button(frm, text='Stop', command=stop).pack(side=tk.LEFT)
 
-    # when parameters change, reset the state so the effect is visible immediately
+    # Reset the view whenever the user changes a parameter so the new setup is displayed immediately.
     def on_param_change(*args):
         reset()
 

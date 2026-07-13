@@ -1,8 +1,11 @@
+"""Animated 1D collision demo showing momentum conservation."""
+
 import tkinter as tk
 from tkinter import ttk
 
 
 def open_momentum_window(master=None):
+    """Create the collision simulator window with controls and animated blocks."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Momentum & Collisions — Animated 1D Collision")
     win.geometry("1000x300")
@@ -72,9 +75,9 @@ def open_momentum_window(master=None):
     }
 
     def box_size(mass_value: float) -> tuple[float, float]:
-        """Return (w, h) in pixels.
+        """Return the width and height of a block based on its mass.
 
-        User request: scale TOTAL size (width + height), not just width.
+        Larger masses become visually larger so the animation is easier to follow.
         """
         m = float(mass_value)
         # Map mass (0.1..20) -> size range in px.
@@ -86,6 +89,7 @@ def open_momentum_window(master=None):
 
 
     def compute_after_vels():
+        """Calculate the post-collision velocities for the two blocks."""
         M1 = m1.get()
         V1 = state['v1']
         M2 = m2.get()
@@ -99,6 +103,7 @@ def open_momentum_window(master=None):
         return u1, u2
 
     def reset():
+        """Reset the collision scene to its initial positions and velocities."""
         state['x1'] = 120.0
         state['x2'] = 740.0
         state['v1'] = v1.get()
@@ -106,6 +111,7 @@ def open_momentum_window(master=None):
         state['running'] = False
 
     def step():
+        """Advance the collision animation by one frame and redraw the scene."""
         state['running'] = True
         dt = 0.02
 
@@ -129,14 +135,13 @@ def open_momentum_window(master=None):
         canvas.delete('all')
         canvas.create_line(0, 140, 1000, 140, fill='sienna')
 
-        # Text above boxes (mass labels + momentum label)
+        # Add labels above each block so the user can identify them easily.
         ttk_text_y = 40
         canvas.create_text(260, ttk_text_y, text="Block 1", fill='black', anchor='center')
         canvas.create_text(740, ttk_text_y, text="Block 2", fill='black', anchor='center')
 
 
-        # --- Block 1 ---
-
+        # Draw block 1 and its velocity arrow.
         w1, h1 = box_size(m1.get())
 
         x1_left = state['x1']
@@ -191,7 +196,7 @@ def open_momentum_window(master=None):
         canvas.create_text(x1_left + w1 / 2, 60, text=f"m1={m1.get():.2f} kg", fill='black')
 
 
-        # --- Block 2 ---
+        # Draw block 2 and its velocity arrow.
         w2, h2 = box_size(m2.get())
         x2_left = state['x2']
         x2_right = x2_left + w2

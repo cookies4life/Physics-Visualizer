@@ -1,9 +1,12 @@
+"""Rotational motion visualization for a spinning disk with torque and energy."""
+
 import tkinter as tk
 from tkinter import ttk
 import math
 
 
 def open_rotation_window(master=None):
+    """Create the rotational motion demo with a spinning disk and live physics values."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Rotational Motion — Spinning Disk")
     win.geometry("700x420")
@@ -50,6 +53,7 @@ def open_rotation_window(master=None):
     energy_hist = {'rot': [], 't': []}
 
     def step():
+        """Update the angular motion and redraw the disk and energy plot."""
         m = mass.get(); r = radius.get(); tau = torque.get()
         I = 0.5 * m * r * r  # solid disk
         alpha = tau / I if I != 0 else 0.0

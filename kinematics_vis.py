@@ -1,23 +1,27 @@
+"""Kinematics visualization for projectile motion with live graphs."""
+
 import tkinter as tk
 from tkinter import ttk
 import math
 
 
 def open_kinematics_window(master=None):
+    """Create the projectile motion window with controls, animation, and graphs."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Kinematics — Projectile Motion")
     win.geometry("1200x640")
 
-    # Header/title and short description for users
+    # Create the top title and description for the visualization.
     header = ttk.Frame(win)
     header.pack(fill=tk.X)
     ttk.Label(header, text="Kinematics — Projectile Motion", font=(None, 16, 'bold')).pack(anchor='n')
     ttk.Label(header, text="Shows a projectile under constant gravity and live plots of distance, speed and acceleration vs time.", wraplength=1000).pack(anchor='n')
 
+    # Create the left-side control panel for changing the simulation parameters.
     controls = ttk.Frame(win, padding=8)
     controls.pack(side=tk.LEFT, fill=tk.Y)
 
-    # Main animation canvas (larger) with title
+    # Create the main animation canvas where the projectile is drawn.
     canvas_w, canvas_h = 800, 560
     anim_frame = ttk.Frame(win)
     anim_frame.pack(side=tk.LEFT, padx=8, pady=8)
@@ -25,11 +29,11 @@ def open_kinematics_window(master=None):
     canvas = tk.Canvas(anim_frame, bg="white", width=canvas_w, height=canvas_h)
     canvas.pack()
 
-    # Graphs canvas (x(t), v(t), a(t)) stacked vertically
+    # Create the right-side area for the live graphs.
     graphs_frame = ttk.Frame(win)
     graphs_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=8, pady=8)
 
-    # Each graph gets a titled frame
+    # Add three stacked graph panels for distance, speed, and acceleration.
     g1 = ttk.Frame(graphs_frame)
     ttk.Label(g1, text='x(t) — Distance vs Time', font=(None, 11, 'bold')).pack(anchor='w')
     graph_xt = tk.Canvas(g1, bg='white', height=140)
@@ -48,12 +52,13 @@ def open_kinematics_window(master=None):
     graph_at.pack(fill=tk.BOTH, expand=True)
     g3.pack(fill=tk.BOTH, expand=True)
 
-    # Parameters
+    # Define the user-adjustable simulation variables.
     initial_speed = tk.DoubleVar(value=40.0)
     angle_deg = tk.DoubleVar(value=45.0)
     gravity = tk.DoubleVar(value=9.81)
     dt_var = tk.DoubleVar(value=0.03)
 
+    # Keep a small label beside each slider showing the current numeric value.
     def _bind_display(var, display_var):
         def _update(*_args):
             display_var.set(f"{var.get():.2f}")
@@ -82,9 +87,11 @@ def open_kinematics_window(master=None):
     btn_frame = ttk.Frame(controls)
     btn_frame.pack(pady=12, fill=tk.X)
 
+    # Store the current running state and the simulation time.
     running = {'on': False}
     sim = {'t': 0.0}
 
+    # Store historical values for drawing the graphs.
     traj = []
     times = []
     xs = []
@@ -93,6 +100,7 @@ def open_kinematics_window(master=None):
     # dynamic scaling factors (pixels per meter)
     scales = {'x_scale': 5.0, 'y_scale': 5.0}
 
+    # Reset the simulation so it starts from a clean state.
     def reset():
         running['on'] = False
         sim['t'] = 0.0
@@ -101,6 +109,7 @@ def open_kinematics_window(master=None):
         canvas.delete('all')
         graph_xt.delete('all'); graph_vt.delete('all'); graph_at.delete('all')
 
+    # Start the projectile motion animation.
     def start():
         if running['on']:
             return
@@ -123,6 +132,7 @@ def open_kinematics_window(master=None):
         scales['y_scale'] = (canvas_h - 120) / (max_height + 1.0)
         step()
 
+    # Advance the projectile by one time step and redraw the scene.
     def step():
         if not running['on']:
             return
@@ -180,6 +190,7 @@ def open_kinematics_window(master=None):
         draw_graphs()
         win.after(int(dt*1000), step)
 
+    # Draw the three graphs from the recorded motion data.
     def draw_graphs():
         # draw axes, ticks, titles for each graph and the timeseries
         def draw_on(canvas_obj, data, color, y_label, title):

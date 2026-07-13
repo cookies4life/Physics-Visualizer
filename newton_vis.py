@@ -1,9 +1,12 @@
+"""Newton's laws visualizations for forces, friction, and incline motion."""
+
 import tkinter as tk
 from tkinter import ttk
 import math
 
 
 def create_incline_demo_window(master=None, title="Incline Demo", description="", mode='slide'):
+    """Create a window showing a block on an incline with force vectors and motion."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title(title)
     win.geometry("980x680")
@@ -70,10 +73,12 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
     frm.columnconfigure(1, weight=1)
     frm.columnconfigure(2, weight=0)
 
+    # Store motion data for the graph and the current simulation state.
     history = []
     state = {'s': 0.0, 'v': 0.0}
     running = {'on': False}
 
+    # Reset the incline demo back to the starting position.
     def reset():
         if mode == 'push':
             state['s'] = 220.0
@@ -85,6 +90,7 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
         history.append({'s': state['s'], 'v': state['v']})
         draw_scene(0.0, 0.0, 0.0, 0.0)
 
+    # Draw the wooden incline surface used in the animation.
     def draw_wooden_incline(angle, base_x, base_y, length):
         x2 = base_x + length * math.cos(angle)
         y2 = base_y - length * math.sin(angle)
@@ -101,6 +107,7 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
         canvas.create_line(base_x, base_y, x2, base_y, fill='sienna', width=4)
         return x2, y2
 
+    # Draw the motion graph showing position and velocity over time.
     def draw_graph():
         graph_canvas.delete('all')
         width = 320
@@ -126,6 +133,7 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
             graph_canvas.create_line(*points, fill=color, smooth=True, width=2)
             graph_canvas.create_text(width - 30, margin + 10 + (0 if key == 's' else 20), text=label, fill=color, anchor='w')
 
+    # Draw the entire scene with the incline, block, and force arrows.
     def draw_scene(a, g_par, N, friction_mag):
         canvas.delete('all')
         angle = math.radians(incline_angle.get())
@@ -235,6 +243,7 @@ def create_incline_demo_window(master=None, title="Incline Demo", description=""
 
 
 def open_push_up_incline_window(master=None):
+    """Open the incline demo where the block is pushed up the slope."""
     return create_incline_demo_window(
         master,
         title="Push-Up Incline Demo",
@@ -243,6 +252,7 @@ def open_push_up_incline_window(master=None):
 
 
 def open_slide_down_incline_window(master=None):
+    """Open the incline demo where the block slides down the slope."""
     return create_incline_demo_window(
         master,
         title="Slide-Down Incline Demo",
@@ -251,6 +261,7 @@ def open_slide_down_incline_window(master=None):
 
 
 def open_newton_window(master=None):
+    """Create the main Newton's laws window with horizontal-motion and incline demos."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Newton's Laws — Force Visualizer")
     win.geometry("900x420")
@@ -307,9 +318,11 @@ def open_newton_window(master=None):
     canvas.grid(row=8, column=0, columnspan=3, sticky='nsew', pady=8)
     frm.columnconfigure(1, weight=1)
 
+    # Track the horizontal block's position and velocity.
     pos = {'x': 50.0, 'v': 0.0}
     running = {'on': False}
 
+    # Reset the horizontal block demo to its starting position.
     def reset():
         pos['x'] = 50.0
         pos['v'] = 0.0
@@ -317,6 +330,7 @@ def open_newton_window(master=None):
         draw_forces(0, 0, mass.get(), 0)
 
     def draw_forces(F, F_fric, m, v):
+        """Draw the block and the visible force arrows for the horizontal motion demo."""
         canvas.delete('all')
         canvas.create_text(10, 10, anchor='nw', text=f"a={((F+F_fric)/m):.2f} m/s^2   v={v:.2f} m/s   μ={friction_mu.get():.2f}")
         canvas.create_line(0, 220, 880, 220, fill='sienna')
