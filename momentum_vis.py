@@ -8,7 +8,22 @@ def open_momentum_window(master=None):
     """Create the collision simulator window with controls and animated blocks."""
     win = tk.Toplevel(master) if master else tk.Tk()
     win.title("Momentum & Collisions — Animated 1D Collision")
-    win.geometry("1000x300")
+
+    def _maximize_or_fullscreen_max(win_obj: tk.Toplevel):
+        """Best-effort maximize for cross-platform Tk (maximized window).
+
+        Uses 'zoomed' when available. Avoid fullscreen toggle to prevent a
+        visible flash.
+        """
+        try:
+            win_obj.state('zoomed')
+        except Exception:
+            pass
+
+    # Start as maximized.
+    win.after(0, lambda: _maximize_or_fullscreen_max(win))
+
+
 
     # Header and description
     header = ttk.Frame(win)
