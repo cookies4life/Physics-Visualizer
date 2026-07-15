@@ -316,3 +316,36 @@ def draw_atom_icon(canvas, cx, cy, r, color='#7c4fd6'):
         ex, ey = pts[int(t * len(pts))]
         canvas.create_oval(ex - 4, ey - 4, ex + 4, ey + 4, fill='#d9740c', outline='')
     canvas.create_oval(cx - r * 0.16, cy - r * 0.16, cx + r * 0.16, cy + r * 0.16, fill=color, outline='')
+
+
+def draw_pencil(canvas, cx, cy, length, width, angle_rad=math.radians(-40)):
+    """Draw a simple wooden pencil (eraser, ferrule, wood body, sharpened graphite tip)
+    centered at (cx, cy), pointing at angle_rad. Used as the app's logo."""
+    cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+
+    def rot(lx, ly):
+        return (cx + lx * cos_a - ly * sin_a, cy + lx * sin_a + ly * cos_a)
+
+    def quad(x0, x1, half_w, **kwargs):
+        pts = [rot(x0, -half_w), rot(x1, -half_w), rot(x1, half_w), rot(x0, half_w)]
+        canvas.create_polygon(*[c for p in pts for c in p], **kwargs)
+
+    half_w = width / 2
+    tip_len = length * 0.16
+    ferrule_len = length * 0.08
+    eraser_len = length * 0.10
+    x0 = -length / 2
+    x1 = x0 + eraser_len
+    x2 = x1 + ferrule_len
+    x3 = length / 2 - tip_len
+    x4 = x3 + tip_len * 0.5
+    x5 = length / 2
+
+    quad(x0, x1, half_w, fill='#e0708a', outline='#8a3d52', width=1)
+    quad(x1, x2, half_w, fill='#c7ccd4', outline='#5a5f68', width=1)
+    quad(x2, x3, half_w, fill='#e8b84b', outline='#8a6b1f', width=1)
+    canvas.create_line(*rot(x2, 0), *rot(x3, 0), fill='#c99a2e', width=1)
+    canvas.create_polygon(*[c for p in (rot(x3, -half_w), rot(x4, 0), rot(x3, half_w)) for c in p],
+                           fill='#f0d9a6', outline='#8a6b1f', width=1)
+    canvas.create_polygon(*[c for p in (rot(x4, -half_w * 0.35), rot(x5, 0), rot(x4, half_w * 0.35)) for c in p],
+                           fill='#2b2015', outline='')

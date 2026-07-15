@@ -13,6 +13,7 @@ import rotation_vis
 import fluids_vis
 import quantum_vis
 import whiteboard_tutor
+import waves_vis
 
 
 TILE_SIZE = 112
@@ -35,8 +36,13 @@ class MainMenu:
 		outer = tk.Frame(self.root, bg=BG, padx=28, pady=24)
 		outer.pack(fill=tk.BOTH, expand=True)
 
-		ttk.Label(outer, text="Physics Visualizer", font=(None, 26, 'bold'), background=BG).pack(pady=(0, 2))
-		ttk.Label(outer, text="Pick a topic to explore", font=(None, 12), background=BG, foreground='#5a5f68').pack(pady=(0, 16))
+		title_row = tk.Frame(outer, bg=BG)
+		title_row.pack(pady=(0, 2))
+		logo_canvas = tk.Canvas(title_row, width=60, height=48, bg=BG, highlightthickness=0)
+		logo_canvas.pack(side=tk.LEFT, padx=(0, 10))
+		viz_common.draw_pencil(logo_canvas, 30, 24, 54, 10)
+		tk.Label(title_row, text="Physics Visualizer", font=(None, 26, 'bold'), bg=BG, fg='black').pack(side=tk.LEFT)
+		tk.Label(outer, text="Pick a topic to explore", font=(None, 12), bg=BG, fg='#5a5f68').pack(pady=(0, 16))
 
 		hero = self._make_hero_tile(
 			outer, "Whiteboard Tutor", "Draw a free-body diagram or write out your question — an AI physics tutor checks your work and chats with you live.",
@@ -53,6 +59,7 @@ class MainMenu:
 			("Momentum &\nCollisions", self._icon_momentum, self.open_momentum, '#eef2f7'),
 			("Rotational\nMotion", self._icon_rotation, self.open_rotation, '#fff4e0'),
 			("Fluids &\nStatics", self._icon_fluids, self.open_fluids, '#e6f6fb'),
+			("Waves &\nDiffraction", self._icon_waves, self.open_waves, '#e0f2fe'),
 			("Quantum\nMechanics", self._icon_quantum, self.open_quantum, '#f0e9ff'),
 		]
 
@@ -180,6 +187,20 @@ class MainMenu:
 		mid = TILE_SIZE / 2
 		viz_common.draw_atom_icon(canvas, mid, mid, TILE_SIZE * 0.36)
 
+	def _icon_waves(self, canvas):
+		w = h = TILE_SIZE
+		viz_common.draw_sky(canvas, w, h, int(h * 0.42))
+		barrier_y = h * 0.42
+		canvas.create_rectangle(0, h * 0.42, w, h, fill='#2ea3f2', outline='')
+		for row, amp, color in ((0.58, 4, '#bfe6ff'), (0.74, 5, '#e3f6ff'), (0.9, 4, '#bfe6ff')):
+			pts = []
+			for i in range(0, int(w) + 1, 4):
+				pts.append((i, h * row + amp * math.sin(i * 0.5)))
+			canvas.create_line(*[c for p in pts for c in p], fill=color, width=2, smooth=True)
+		gap_l, gap_r = w * 0.44, w * 0.56
+		canvas.create_rectangle(0, barrier_y - 4, gap_l, barrier_y + 4, fill='#5a5f68', outline='#333333')
+		canvas.create_rectangle(gap_r, barrier_y - 4, w, barrier_y + 4, fill='#5a5f68', outline='#333333')
+
 	def open_kinematics(self):
 		"""Open the kinematics projectile demo."""
 		kinematics_vis.open_kinematics_window(self.root)
@@ -207,6 +228,10 @@ class MainMenu:
 	def open_quantum(self):
 		"""Open the quantum mechanics demo."""
 		quantum_vis.open_quantum_window(self.root)
+
+	def open_waves(self):
+		"""Open the water wave / diffraction ripple-tank demo."""
+		waves_vis.open_waves_window(self.root)
 
 	def open_whiteboard_tutor(self):
 		"""Open the AI whiteboard tutor (drawing board + live chat)."""
