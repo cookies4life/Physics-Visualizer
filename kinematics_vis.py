@@ -40,10 +40,13 @@ def open_kinematics_window(master=None):
 
     # Create the main animation canvas where the projectile is drawn.
     canvas_w, canvas_h = 800, 560
+    GROUND_Y = canvas_h - 60
+    ORIGIN_X = 20
+    VECTOR_PX_PER_MPS = 3.0
     anim_frame = ttk.Frame(win)
     anim_frame.pack(side=tk.LEFT, padx=8, pady=8)
     ttk.Label(anim_frame, text='Animation — Projectile Motion', font=(None, 12, 'bold')).pack()
-    canvas = tk.Canvas(anim_frame, bg="white", width=canvas_w, height=canvas_h)
+    canvas = tk.Canvas(anim_frame, bg="#eaf6ff", width=canvas_w, height=canvas_h, highlightthickness=0)
     canvas.pack()
 
     # Create the right-side area for the live graphs.
@@ -74,6 +77,7 @@ def open_kinematics_window(master=None):
     angle_deg = tk.DoubleVar(value=45.0)
     gravity = tk.DoubleVar(value=9.81)
     dt_var = tk.DoubleVar(value=0.03)
+    mass = tk.DoubleVar(value=0.43)  # kg — a regulation football is ~0.41-0.45 kg
 
     # Keep a small label beside each slider showing the current numeric value.
     def _bind_display(var, display_var):
@@ -82,8 +86,8 @@ def open_kinematics_window(master=None):
         var.trace_add("write", _update)
         _update()
 
-    initial_speed_display = tk.StringVar(); angle_deg_display = tk.StringVar(); gravity_display = tk.StringVar(); dt_display = tk.StringVar()
-    _bind_display(initial_speed, initial_speed_display); _bind_display(angle_deg, angle_deg_display); _bind_display(gravity, gravity_display); _bind_display(dt_var, dt_display)
+    initial_speed_display = tk.StringVar(); angle_deg_display = tk.StringVar(); gravity_display = tk.StringVar(); dt_display = tk.StringVar(); mass_display = tk.StringVar()
+    _bind_display(initial_speed, initial_speed_display); _bind_display(angle_deg, angle_deg_display); _bind_display(gravity, gravity_display); _bind_display(dt_var, dt_display); _bind_display(mass, mass_display)
 
     ttk.Label(controls, text="Initial speed (m/s)").pack()
     ttk.Scale(controls, from_=0, to=100, variable=initial_speed, orient=tk.HORIZONTAL).pack(fill=tk.X)
@@ -92,6 +96,10 @@ def open_kinematics_window(master=None):
     ttk.Label(controls, text="Launch angle (deg)").pack(pady=(8,0))
     ttk.Scale(controls, from_=0, to=90, variable=angle_deg, orient=tk.HORIZONTAL).pack(fill=tk.X)
     ttk.Label(controls, textvariable=angle_deg_display).pack()
+
+    ttk.Label(controls, text="Football mass (kg)").pack(pady=(8,0))
+    ttk.Scale(controls, from_=0.1, to=5.0, variable=mass, orient=tk.HORIZONTAL).pack(fill=tk.X)
+    ttk.Label(controls, textvariable=mass_display).pack()
 
     ttk.Label(controls, text="Gravity (m/s^2)").pack(pady=(8,0))
     ttk.Scale(controls, from_=0.1, to=20, variable=gravity, orient=tk.HORIZONTAL).pack(fill=tk.X)
@@ -154,6 +162,81 @@ def open_kinematics_window(master=None):
     as_ = []
     # dynamic scaling factors (pixels per meter)
     scales = {'x_scale': 5.0, 'y_scale': 5.0}
+    dragging = {'on': False}
+
+    # The football grows with mass so heavier balls are visibly larger.
+    def football_size():
+        m = min(5.0, max(0.1, mass.get()))
+        length = 16 + m * 24
+        return length, length * 0.55
+
+    # Where the adjustable velocity-vector arrow currently ends, in canvas coords.
+    def arrow_tip():
+        theta = math.radians(angle_deg.get())
+        max_len = max(40, canvas_w - ORIGIN_X - 60)
+        speed_px = min(initial_speed.get() * VECTOR_PX_PER_MPS, max_len)
+        return ORIGIN_X + speed_px * math.cos(theta), GROUND_Y - speed_px * math.sin(theta)
+
+    # Draw the football field with the adjustable launch vector, shown whenever
+    # the simulation isn't actively running.
+    def draw_idle_preview():
+        canvas.delete('all')
+        viz_common.draw_football_field(canvas, canvas_w, canvas_h, GROUND_Y)
+
+        theta_deg = angle_deg.get()
+        tip_x, tip_y = arrow_tip()
+        viz_common.draw_arrow(canvas, ORIGIN_X, GROUND_Y, tip_x, tip_y, '#1d4fd8', 3)
+
+        r = 50
+        if theta_deg > 1:
+            canvas.create_arc(ORIGIN_X - r, GROUND_Y - r, ORIGIN_X + r, GROUND_Y + r, start=0, extent=-theta_deg, style='arc', outline='#333333', width=2)
+        mid = math.radians(theta_deg / 2)
+        canvas.create_text(
+            ORIGIN_X + (r + 26) * math.cos(mid), GROUND_Y - (r + 26) * math.sin(mid),
+            text=f"θ={theta_deg:.1f}°", font=('Arial', 11, 'bold'), fill='#1d4fd8')
+        canvas.create_text(tip_x + 10, tip_y - 10, text=f"v0={initial_speed.get():.1f} m/s", fill='#1d4fd8', font=('Arial', 10, 'bold'), anchor='w')
+
+        length, width_ = football_size()
+        viz_common.draw_football(canvas, ORIGIN_X, GROUND_Y - width_ / 2, length, width_, math.radians(-theta_deg))
+        viz_common.draw_readout(canvas, f"Drag the arrow tip to set v0 and θ   |   v0={initial_speed.get():.1f} m/s  θ={theta_deg:.1f}°")
+
+    def refresh_idle(*_args):
+        if not running['on']:
+            draw_idle_preview()
+
+    for var in (initial_speed, angle_deg, mass):
+        var.trace_add("write", refresh_idle)
+    canvas.bind('<Configure>', refresh_idle)
+
+    # --- Let the user drag the velocity-vector arrow to set v0 and angle ---
+    def near_tip(x, y):
+        tx, ty = arrow_tip()
+        return math.hypot(x - tx, y - ty) <= 16
+
+    def on_press(event):
+        if not running['on'] and near_tip(event.x, event.y):
+            dragging['on'] = True
+
+    def on_drag(event):
+        if not dragging['on']:
+            return
+        dx = max(0.0, event.x - ORIGIN_X)
+        dy = max(0.0, GROUND_Y - event.y)
+        r_px = max(6.0, math.hypot(dx, dy))
+        theta = math.degrees(math.atan2(dy, dx)) if (dx > 0 or dy > 0) else 0.0
+        angle_deg.set(max(0.0, min(90.0, theta)))
+        initial_speed.set(max(0.0, min(100.0, r_px / VECTOR_PX_PER_MPS)))
+
+    def on_release(_event):
+        dragging['on'] = False
+
+    def on_hover(event):
+        canvas.config(cursor='fleur' if (not running['on'] and near_tip(event.x, event.y)) else '')
+
+    canvas.bind('<ButtonPress-1>', on_press)
+    canvas.bind('<B1-Motion>', on_drag)
+    canvas.bind('<ButtonRelease-1>', on_release)
+    canvas.bind('<Motion>', on_hover)
 
     # Reset the simulation so it starts from a clean state.
     def reset():
@@ -161,8 +244,8 @@ def open_kinematics_window(master=None):
         sim['t'] = 0.0
         traj.clear()
         times.clear(); xs.clear(); vs.clear(); as_.clear()
-        canvas.delete('all')
         graph_xt.delete('all'); graph_vt.delete('all'); graph_at.delete('all')
+        draw_idle_preview()
         v0 = initial_speed.get()
         theta_deg = angle_deg.get()
         g = gravity.get()
@@ -221,12 +304,10 @@ def open_kinematics_window(master=None):
         # Convert to canvas coords using dynamic scales
         xscale = scales['x_scale']
         yscale = scales['y_scale']
-        cx = 20 + x * xscale
-        # ground offset
-        ground_y = canvas_h - 40
-        cy = ground_y - y * yscale
+        cx = ORIGIN_X + x * xscale
+        cy = GROUND_Y - y * yscale
 
-        if cy > ground_y:
+        if cy > GROUND_Y:
             # hit the ground
             running['on'] = False
             draw_graphs()
@@ -234,20 +315,21 @@ def open_kinematics_window(master=None):
 
         traj.append((cx, cy))
         canvas.delete('all')
-        # draw ground
-        canvas.create_line(0, ground_y, canvas_w, ground_y, fill='sienna')
+        viz_common.draw_football_field(canvas, canvas_w, canvas_h, GROUND_Y)
         # draw trajectory
         for i in range(1, len(traj)):
             x1, y1 = traj[i-1]
             x2, y2 = traj[i]
-            canvas.create_line(x1, y1, x2, y2, fill='blue')
-        # draw projectile
-        canvas.create_oval(cx-6, cy-6, cx+6, cy+6, fill='red')
+            canvas.create_line(x1, y1, x2, y2, fill='#1d4fd8', width=2)
+        # draw the football, oriented along its current velocity direction
+        length, width_ = football_size()
+        orientation = math.atan2(-vy, vx)
+        viz_common.draw_football(canvas, cx, cy, length, width_, orientation)
 
         # show numeric info and dt
         speed = math.hypot(vx, vy)
-        info = f"t={sim['t']:.2f}s  x={x:.2f} m  y={max(y,0):.2f} m  |v|={speed:.2f} m/s  dt={dt:.2f}s"
-        canvas.create_text(10, 10, anchor='nw', text=info, fill='black')
+        info = f"t={sim['t']:.2f}s  x={x:.2f} m  y={max(y,0):.2f} m  |v|={speed:.2f} m/s  th0={angle_deg.get():.1f} deg  dt={dt:.2f}s"
+        viz_common.draw_readout(canvas, info)
 
         draw_graphs()
         win.after(int(dt*1000), step)
@@ -315,7 +397,7 @@ def open_kinematics_window(master=None):
 
 
     ttk.Label(controls, text="Notes:").pack(pady=(12,0))
-    ttk.Label(controls, wraplength=220, text="This demo shows projectile motion and live plots of x(t), |v|(t), and |a|(t). Use sliders to change parameters.").pack()
+    ttk.Label(controls, wraplength=220, text="This demo shows a football's projectile motion and live plots of x(t), |v|(t), and |a|(t). Use the sliders, or drag the blue arrow's tip on the field to set the launch speed and angle.").pack()
 
     reset()
     return win
