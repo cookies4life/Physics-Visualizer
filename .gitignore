@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+
+# Personal Claude Code permission overrides — not meant to be shared.
+.claude/settings.local.json

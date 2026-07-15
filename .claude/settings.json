@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/Users/admin/Documents/GitHub/Physics-Visualizer/.claude/settings.local.json'\\)\\); print\\(json.dumps\\(d, indent=2\\)\\)\")",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)"
+    ]
+  }
+}

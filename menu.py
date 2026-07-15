@@ -12,6 +12,7 @@ import momentum_vis
 import rotation_vis
 import fluids_vis
 import quantum_vis
+import whiteboard_tutor
 
 
 TILE_SIZE = 112
@@ -35,7 +36,12 @@ class MainMenu:
 		outer.pack(fill=tk.BOTH, expand=True)
 
 		ttk.Label(outer, text="Physics Visualizer", font=(None, 26, 'bold'), background=BG).pack(pady=(0, 2))
-		ttk.Label(outer, text="Pick a topic to explore", font=(None, 12), background=BG, foreground='#5a5f68').pack(pady=(0, 22))
+		ttk.Label(outer, text="Pick a topic to explore", font=(None, 12), background=BG, foreground='#5a5f68').pack(pady=(0, 16))
+
+		hero = self._make_hero_tile(
+			outer, "Whiteboard Tutor", "Draw a free-body diagram or write out your question — an AI physics tutor checks your work and chats with you live.",
+			self._icon_whiteboard_tutor, self.open_whiteboard_tutor, '#fff6e0')
+		hero.pack(fill=tk.X, pady=(0, 20))
 
 		grid = tk.Frame(outer, bg=BG)
 		grid.pack(expand=True)
@@ -87,6 +93,60 @@ class MainMenu:
 			widget.config(cursor='hand2')
 
 		return tile
+
+	def _make_hero_tile(self, parent, title, subtitle, icon_fn, command, bg):
+		"""Build the big, prominent Whiteboard Tutor tile — same click/hover behavior as a
+		regular tile, but wider and rectangular so it stands out above the topic grid."""
+		tile = tk.Frame(parent, bg=bg, highlightbackground='#e0b84a', highlightcolor='#4c6ef5', highlightthickness=3, bd=0)
+		inner = tk.Frame(tile, bg=bg)
+		inner.pack(fill=tk.X, padx=18, pady=14)
+
+		icon_w, icon_h = 200, 130
+		icon_canvas = tk.Canvas(inner, width=icon_w, height=icon_h, bg=bg, highlightthickness=0)
+		icon_canvas.pack(side=tk.LEFT, padx=(0, 20))
+		icon_fn(icon_canvas, icon_w, icon_h)
+
+		text_frame = tk.Frame(inner, bg=bg)
+		text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+		tk.Label(text_frame, text=title, bg=bg, font=(None, 20, 'bold'), fg='#22252a', anchor='w').pack(fill=tk.X, pady=(10, 4))
+		tk.Label(text_frame, text=subtitle, bg=bg, font=(None, 12), fg='#5a5f68', anchor='w', justify='left', wraplength=520).pack(fill=tk.X)
+		tk.Label(text_frame, text="Click to open ->", bg=bg, font=(None, 11, 'italic'), fg='#8a5a2b', anchor='w').pack(fill=tk.X, pady=(8, 0))
+
+		def on_click(_event=None):
+			command()
+
+		def on_enter(_event=None):
+			tile.config(highlightbackground='#4c6ef5')
+
+		def on_leave(_event=None):
+			tile.config(highlightbackground='#e0b84a')
+
+		clickable = [tile, inner, icon_canvas, text_frame] + list(text_frame.winfo_children())
+		for widget in clickable:
+			widget.bind('<Button-1>', on_click)
+			widget.bind('<Enter>', on_enter)
+			widget.bind('<Leave>', on_leave)
+			widget.config(cursor='hand2')
+
+		return tile
+
+	def _icon_whiteboard_tutor(self, canvas, w, h):
+		"""Draw an easel-mounted whiteboard with a physics equation and markers in a tray."""
+		board_w, board_h = w * 0.82, h * 0.62
+		bx0, by0 = (w - board_w) / 2, h * 0.06
+		bx1, by1 = bx0 + board_w, by0 + board_h
+		canvas.create_rectangle(bx0 - 6, by0 - 6, bx1 + 6, by1 + 6, fill='#c7ccd4', outline='#5a5f68', width=2)
+		canvas.create_rectangle(bx0, by0, bx1, by1, fill='white', outline='#8a8f98', width=1)
+		canvas.create_text((bx0 + bx1) / 2, (by0 + by1) / 2, text='F = ma', font=('Arial', int(h * 0.16), 'bold'), fill='#1d4fd8')
+
+		canvas.create_line(bx0 + board_w * 0.15, by1 + 6, bx0 - board_w * 0.05, h * 0.97, fill='#5a5f68', width=3)
+		canvas.create_line(bx1 - board_w * 0.15, by1 + 6, bx1 + board_w * 0.05, h * 0.97, fill='#5a5f68', width=3)
+		canvas.create_line(bx0 + board_w * 0.5, by1 + 6, bx0 + board_w * 0.5, h * 0.85, fill='#5a5f68', width=3)
+
+		tray_y = by1 + 2
+		for i, mc in enumerate(('#c1440e', '#1f8a3b', '#7c4fd6')):
+			mx = bx0 + board_w * 0.26 + i * board_w * 0.18
+			canvas.create_rectangle(mx, tray_y - 4, mx + board_w * 0.11, tray_y + 4, fill=mc, outline='#333333')
 
 	# --- Icon drawers, one per topic ---
 
@@ -147,6 +207,10 @@ class MainMenu:
 	def open_quantum(self):
 		"""Open the quantum mechanics demo."""
 		quantum_vis.open_quantum_window(self.root)
+
+	def open_whiteboard_tutor(self):
+		"""Open the AI whiteboard tutor (drawing board + live chat)."""
+		whiteboard_tutor.open_whiteboard_tutor(self.root)
 
 	def run(self):
 		"""Start the Tkinter main event loop."""
