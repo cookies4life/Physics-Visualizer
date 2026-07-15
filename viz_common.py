@@ -228,3 +228,91 @@ def draw_flat_block(canvas, x0, y0, x1, y1, mass_val):
     canvas.create_rectangle(x0, y0, x1, y1, fill='#3a56b0', outline='#1c2b57', width=2)
     canvas.create_line(x0, y0 + 3, x1, y0 + 3, fill='#7c94e0', width=3)
     canvas.create_text(cx, cy, text=f"m={mass_val:.2f} kg", fill='white', font=('Arial', 9, 'bold'))
+
+
+# --- Small topic icons, used by the main menu tiles ---
+
+def draw_wood_crate(canvas, cx, cy, size, label='m'):
+    """Draw a wooden crate with a mass label on it (Newton's Laws icon)."""
+    half = size / 2
+    x0, y0, x1, y1 = cx - half, cy - half, cx + half, cy + half
+    canvas.create_rectangle(x0, y0, x1, y1, fill='#c98a4b', outline='#6b4423', width=3)
+    for frac in (0.33, 0.66):
+        canvas.create_line(x0, y0 + size * frac, x1, y0 + size * frac, fill='#a9713f', width=1)
+    corner = size * 0.28
+    for x, y, dx, dy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
+        canvas.create_line(x, y, x + dx * corner, y + dy * corner, fill='#6b4423', width=2)
+    canvas.create_text(cx, cy, text=label, font=('Arial', max(10, int(size * 0.34)), 'bold'), fill='#3d2a12')
+
+
+def draw_spring_icon(canvas, cx, top_y, bottom_y, mass_size):
+    """Draw a small hanging spring-mass system (Work, Energy & Power icon)."""
+    canvas.create_rectangle(cx - mass_size * 0.7, top_y - 6, cx + mass_size * 0.7, top_y, fill='#6b4423', outline='#4a2d15', width=1)
+    coil_top = top_y
+    coil_bottom = bottom_y - mass_size / 2
+    coils = 5
+    amp = mass_size * 0.28
+    pts = []
+    for i in range(coils + 1):
+        t = i / coils
+        y = coil_top + t * (coil_bottom - coil_top)
+        x = cx + (amp if i % 2 == 0 else -amp)
+        pts.append((x, y))
+    canvas.create_line(cx, coil_top, pts[0][0], pts[0][1], fill='#5a5a5a', width=2)
+    for i in range(len(pts) - 1):
+        canvas.create_line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], fill='#5a5a5a', width=2)
+    canvas.create_line(pts[-1][0], pts[-1][1], cx, coil_bottom, fill='#5a5a5a', width=2)
+    bx0, by0, bx1, by1 = cx - mass_size / 2, bottom_y - mass_size, cx + mass_size / 2, bottom_y
+    canvas.create_rectangle(bx0, by0, bx1, by1, fill='#3a56b0', outline='#1c2b57', width=2)
+    canvas.create_line(bx0, by0 + 3, bx1, by0 + 3, fill='#7c94e0', width=3)
+    canvas.create_text((bx0 + bx1) / 2, (by0 + by1) / 2, text='m', font=('Arial', max(10, int(mass_size * 0.4)), 'bold'), fill='white')
+
+
+def draw_rotation_icon(canvas, cx, cy, r, color='#5a5f68'):
+    """Draw a spinning wheel with a curved motion arrow (Rotational Motion icon)."""
+    canvas.create_oval(cx - r, cy - r, cx + r, cy + r, fill='#c7ccd4', outline=color, width=3)
+    canvas.create_oval(cx - r * 0.14, cy - r * 0.14, cx + r * 0.14, cy + r * 0.14, fill=color, outline='')
+    for ang in (0, 60, 120):
+        rad = math.radians(ang)
+        dx, dy = math.cos(rad), math.sin(rad)
+        canvas.create_line(cx + dx * r * 0.14, cy + dy * r * 0.14, cx + dx * r * 0.92, cy + dy * r * 0.92, fill=color, width=3)
+        canvas.create_line(cx - dx * r * 0.14, cy - dy * r * 0.14, cx - dx * r * 0.92, cy - dy * r * 0.92, fill=color, width=3)
+    canvas.create_arc(cx - r * 1.4, cy - r * 1.4, cx + r * 1.4, cy + r * 1.4, start=20, extent=130, style='arc', outline='#1d4fd8', width=3)
+    tip_rad = math.radians(20)
+    tip_x, tip_y = cx + r * 1.4 * math.cos(tip_rad), cy - r * 1.4 * math.sin(tip_rad)
+    canvas.create_line(tip_x - 8, tip_y - 3, tip_x, tip_y, tip_x - 3, tip_y + 8, fill='#1d4fd8', width=3, capstyle='round', joinstyle='round')
+
+
+def draw_water_drop(canvas, cx, cy, size, color='#2ea3f2'):
+    """Draw a water droplet (Fluids & Statics icon)."""
+    norm_pts = [
+        (0.0, -1.0), (0.55, -0.35), (0.85, 0.25), (0.55, 0.85),
+        (0.0, 1.0), (-0.55, 0.85), (-0.85, 0.25), (-0.55, -0.35),
+    ]
+    r = size / 2
+    pts = [(cx + nx * r, cy + ny * r) for nx, ny in norm_pts]
+    canvas.create_polygon(*[c for p in pts for c in p], fill=color, outline='#1b6ca8', width=2, smooth=True)
+    canvas.create_oval(cx - r * 0.35, cy - r * 0.05, cx + r * 0.05, cy + r * 0.45, fill='#bfe6ff', outline='')
+
+
+def _rotated_ellipse_points(cx, cy, rx, ry, angle_rad, n=24):
+    pts = []
+    for i in range(n):
+        t = i / n * 2 * math.pi
+        lx, ly = rx * math.cos(t), ry * math.sin(t)
+        rx_p = lx * math.cos(angle_rad) - ly * math.sin(angle_rad)
+        ry_p = lx * math.sin(angle_rad) + ly * math.cos(angle_rad)
+        pts.append((cx + rx_p, cy + ry_p))
+    return pts
+
+
+def draw_atom_icon(canvas, cx, cy, r, color='#7c4fd6'):
+    """Draw a simple atom with three orbital rings (Quantum Mechanics icon)."""
+    for angle_deg in (0, 60, 120):
+        pts = _rotated_ellipse_points(cx, cy, r * 0.95, r * 0.4, math.radians(angle_deg))
+        canvas.create_polygon(*[c for p in pts for c in p], fill='', outline=color, width=2, smooth=True)
+    for angle_deg, t in ((30, 0.2), (150, 0.55), (270, 0.8)):
+        pts = _rotated_ellipse_points(cx, cy, r * 0.95, r * 0.4, math.radians(angle_deg))
+        ex, ey = pts[int(t * len(pts))]
+        canvas.create_oval(ex - 4, ey - 4, ex + 4, ey + 4, fill='#d9740c', outline='')
+    canvas.create_oval(cx - r * 0.16, cy - r * 0.16, cx + r * 0.16, cy + r * 0.16, fill=color, outline='')
