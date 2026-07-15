@@ -196,74 +196,59 @@ def open_energy_window(master=None):
     # Store the current physics state and the energy history for plotting.
     state = {'x': x0.get(), 'v': 0.0, 'running': False, 'deformed': False}
     energy_history = {'ke': [], 'pe': [], 't': []}
-    spring_items = []
-    mass_item = None
-    mass_label_item = None
-    info_item = None
-    background_item = None
 
-    # Draw the spring shape between the anchor point and the mass.
-    def draw_spring(cnv, cx, y1, y2, deformed=False):
-        items = []
-        if deformed:
-            items.append(cnv.create_line(cx, y1, cx, y2, fill='red', width=3, dash=(4,4)))
-            items.append(cnv.create_text(cx+60, y1+10, text='Spring deformed', fill='red', anchor='nw'))
-            return items
+    _ENERGY_LEGEND = [('Kinetic energy', '#1d4fd8'), ('Potential energy', '#d9740c')]
+
+    # Draw the spring coil between the ceiling mount and the mass.
+    def draw_spring(cx, y1, y2):
         length = max(10, int(y2 - y1))
         coils = max(6, length // 8)
         amp = 12
         points = []
-        for i in range(coils+1):
+        for i in range(coils + 1):
             t = i / coils
             y = int(y1 + t * (y2 - y1))
             x = cx + (amp if (i % 2 == 0) else -amp)
             points.append((x, y))
-        items.append(cnv.create_line(cx, y1, points[0][0], points[0][1], fill='black', width=2))
-        for i in range(len(points)-1):
-            items.append(cnv.create_line(points[i][0], points[i][1], points[i+1][0], points[i+1][1], fill='black', width=2))
-        items.append(cnv.create_line(points[-1][0], points[-1][1], cx, y2, fill='black', width=2))
-        return items
+        canvas.create_line(cx, y1, points[0][0], points[0][1], fill='#5a5a5a', width=2)
+        for i in range(len(points) - 1):
+            canvas.create_line(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1], fill='#5a5a5a', width=2)
+        canvas.create_line(points[-1][0], points[-1][1], cx, y2, fill='#5a5a5a', width=2)
 
     # Redraw the full spring-mass scene using the current simulation state.
     def draw_scene(a=None):
-        nonlocal spring_items, mass_item, mass_label_item, info_item, background_item
-
-        for item in spring_items:
-            canvas.delete(item)
-        spring_items = []
-        if mass_item is not None:
-            canvas.delete(mass_item)
-            mass_item = None
-        if mass_label_item is not None:
-            canvas.delete(mass_label_item)
-            mass_label_item = None
-        if info_item is not None:
-            canvas.delete(info_item)
-            info_item = None
-
-        if background_item is None:
-            background_item = canvas.create_rectangle(0, 0, 1, 1, fill='white', outline='white')
+        canvas.delete('all')
         w = max(1, canvas.winfo_width())
         h = max(1, canvas.winfo_height())
-        canvas.coords(background_item, 0, 0, w, h)
-        canvas.tag_lower(background_item)
+        floor_y = h - 50
+        viz_common.draw_backdrop(canvas, w, h, floor_y)
 
         cx = _get_canvas_center()
-        top = 20
+        top = 28
+        # Ceiling mount the spring hangs from.
+        canvas.create_rectangle(cx - 55, top - 16, cx + 55, top, fill='#6b4423', outline='#4a2d15', width=2)
+        for hx in range(int(cx - 48), int(cx + 49), 14):
+            canvas.create_line(hx, top, hx - 8, top + 12, fill='#4a2d15', width=1)
+
         rest_pix = 80
         scale = 120
-        ypix = top + rest_pix + state['x']*scale
+        ypix = min(top + rest_pix + state['x'] * scale, floor_y - 22)
 
-        spring_items = draw_spring(canvas, cx, top, ypix-30, deformed=state.get('deformed'))
-        rect_w = 60; rect_h = 40
-        mass_item = canvas.create_rectangle(cx-rect_w//2, ypix-20, cx+rect_w//2, ypix+20, fill='steelblue' if not state.get('deformed') else 'red')
-        mval = mass.get()
-        weight = mval * 9.81
-        mass_label_item = canvas.create_text(cx, ypix, text=f"{mval:.2f} kg\n{weight:.2f} N", fill='white')
-        if a is not None:
-            info_item = canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s  a={a:.2f} m/s^2")
+        rect_w, rect_h = 70, 44
+        x0b, y0b = cx - rect_w / 2, ypix - rect_h / 2
+        x1b, y1b = cx + rect_w / 2, ypix + rect_h / 2
+
+        if state.get('deformed'):
+            draw_spring(cx, top, y0b)
+            canvas.create_rectangle(x0b, y0b, x1b, y1b, fill='#c1440e', outline='#7a2905', width=2)
+            canvas.create_text((x0b + x1b) / 2, (y0b + y1b) / 2, text="Spring\nsnapped!", fill='white', font=('Arial', 9, 'bold'))
         else:
-            info_item = canvas.create_text(10, 10, anchor='nw', text=f"x={state['x']:.2f} m  v={state['v']:.2f} m/s")
+            draw_spring(cx, top, y0b)
+            viz_common.draw_hanging_block(canvas, x0b, y0b, x1b, y1b, mass.get())
+
+        viz_common.draw_legend(canvas, _ENERGY_LEGEND, w)
+        a_text = f"a={a:.2f} m/s^2  " if a is not None else ""
+        viz_common.draw_readout(canvas, f"{a_text}x={state['x']:.2f} m  v={state['v']:.2f} m/s")
 
     # Reset the simulation back to the initial displacement and clear the graph history.
     def reset():
@@ -355,7 +340,7 @@ def open_energy_window(master=None):
             graph.create_line(pad-5, int(yy), pad, int(yy), fill='black')
             graph.create_text(pad-30, int(yy), text=f"{val:.2f}")
         # plot curves
-        for arr, color in ((ke,'blue'), (pe,'orange')):
+        for arr, color in ((ke, '#1d4fd8'), (pe, '#d9740c')):
             for i in range(1, len(arr)):
                 x1 = int(pad + (t[i-1]/tmax)*(w-2*pad))
                 x2 = int(pad + (t[i]/tmax)*(w-2*pad))

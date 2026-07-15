@@ -62,6 +62,73 @@ def draw_backdrop(canvas, canvas_w, canvas_h, ground_y):
         canvas.create_line(gx, ground_y, gx + 6, ground_y + 10, fill='#5f8f45', width=1)
 
 
+def draw_road(canvas, canvas_w, canvas_h, road_y):
+    """Draw a sky gradient above road_y and an asphalt road (with lane dashes)
+    spanning the full canvas width below it."""
+    sky_top = (0xea, 0xf6, 0xff)
+    sky_bottom = (0xff, 0xff, 0xff)
+    bands = 8
+    band_h = max(1, road_y // bands)
+    for i in range(bands):
+        t = i / (bands - 1)
+        r = round(sky_top[0] + (sky_bottom[0] - sky_top[0]) * t)
+        g = round(sky_top[1] + (sky_bottom[1] - sky_top[1]) * t)
+        b = round(sky_top[2] + (sky_bottom[2] - sky_top[2]) * t)
+        canvas.create_rectangle(0, i * band_h, canvas_w, (i + 1) * band_h + 1, fill=f'#{r:02x}{g:02x}{b:02x}', outline='')
+    canvas.create_rectangle(0, road_y, canvas_w, canvas_h, fill='#4a4a4d', outline='')
+    canvas.create_line(0, road_y, canvas_w, road_y, fill='#2e2e30', width=3)
+    canvas.create_line(0, canvas_h - 1, canvas_w, canvas_h - 1, fill='#2e2e30', width=3)
+    dash_w, gap_w = 26, 18
+    dash_y = road_y + (canvas_h - road_y) / 2
+    x = 0
+    while x < canvas_w:
+        canvas.create_line(x, dash_y, x + dash_w, dash_y, fill='#f2d24b', width=3)
+        x += dash_w + gap_w
+
+
+def draw_car(canvas, x_left, x_right, road_y, height, body_color, cabin_color, label_text):
+    """Draw a simple car silhouette (body, cabin, wheels) sitting on a road at road_y."""
+    w = max(1.0, x_right - x_left)
+    wheel_r = max(6.0, height * 0.18)
+    body_bottom = road_y - wheel_r * 0.9
+    body_top = body_bottom - height * 0.55
+    cabin_top = body_top - height * 0.35
+    cabin_left = x_left + w * 0.24
+    cabin_right = x_left + w * 0.76
+
+    canvas.create_oval(x_left + w * 0.06, road_y - wheel_r * 0.3, x_right - w * 0.06, road_y + wheel_r * 0.9, fill='#3a3a3a', outline='')
+
+    canvas.create_polygon(
+        x_left, body_bottom,
+        x_left, body_top + height * 0.12,
+        x_left + w * 0.08, body_top,
+        x_right - w * 0.08, body_top,
+        x_right, body_top + height * 0.12,
+        x_right, body_bottom,
+        smooth=True, fill=body_color, outline='#1c1c1c', width=2)
+
+    canvas.create_polygon(
+        cabin_left, body_top,
+        cabin_left + w * 0.06, cabin_top,
+        cabin_right - w * 0.06, cabin_top,
+        cabin_right, body_top,
+        smooth=True, fill=cabin_color, outline='#1c1c1c', width=1)
+
+    for wx in (x_left + w * 0.22, x_right - w * 0.22):
+        canvas.create_oval(wx - wheel_r, road_y - wheel_r * 1.6, wx + wheel_r, road_y + wheel_r * 0.4, fill='#1c1c1c', outline='#000000')
+        canvas.create_oval(wx - wheel_r * 0.4, road_y - wheel_r * 1.2, wx + wheel_r * 0.4, road_y - wheel_r * 0.4, fill='#cfcfcf', outline='')
+
+    canvas.create_text((x_left + x_right) / 2, body_top + height * 0.28, text=label_text, fill='white', font=('Arial', 9, 'bold'))
+
+
+def draw_hanging_block(canvas, x0, y0, x1, y1, mass_val):
+    """Draw a bevelled block for objects suspended in mid-air (no ground shadow)."""
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    canvas.create_rectangle(x0, y0, x1, y1, fill='#3a56b0', outline='#1c2b57', width=2)
+    canvas.create_line(x0, y0 + 3, x1, y0 + 3, fill='#7c94e0', width=3)
+    canvas.create_text(cx, cy, text=f"m={mass_val:.2f} kg", fill='white', font=('Arial', 9, 'bold'))
+
+
 def draw_legend(canvas, items, canvas_w, top=16):
     """Draw a small legend box in the canvas's top-right corner.
 
