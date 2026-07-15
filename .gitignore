@@ -3,3 +3,9 @@ __pycache__/
 
 # Personal Claude Code permission overrides — not meant to be shared.
 .claude/settings.local.json
+
+# PyInstaller build output — regenerate with: pyinstaller "Physics Visualizer.spec"
+build/
+dist/
+
+.DS_Store
