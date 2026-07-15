@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import ttk
 import math
 
+import viz_common
+
 
 def open_kinematics_window(master=None):
     """Create the projectile motion window with controls, animation, and graphs."""
@@ -102,6 +104,44 @@ def open_kinematics_window(master=None):
     btn_frame = ttk.Frame(controls)
     btn_frame.pack(pady=12, fill=tk.X)
 
+    # --- Small companion window showing the equations being demonstrated ---
+    EQ_W, EQ_H = 340, 420
+    eq_win, update_equations_text = viz_common.create_equations_panel(win, "Projectile Motion", width=EQ_W, height=EQ_H)
+    win.protocol("WM_DELETE_WINDOW", lambda: (eq_win.destroy(), win.destroy()))
+
+    def _reposition_eq_panel():
+        # The main window maximizes shortly after creation, so "beside it"
+        # (computed at eq-panel-creation time) would be stale; pin it to the
+        # screen's top-right corner instead once the window has settled.
+        sw = win.winfo_screenwidth()
+        eq_win.geometry(f"{EQ_W}x{EQ_H}+{sw - EQ_W - 20}+40")
+    win.after(150, _reposition_eq_panel)
+
+    def update_equations(t, v0, theta_deg, g, x, y, vx, vy):
+        speed = math.hypot(vx, vy)
+        lines = [
+            "Position (kinematics with constant acceleration)",
+            "  x(t) = v0 cosθ · t",
+            f"  = ({v0:.2f})cos({theta_deg:.1f}°)×{t:.2f} = {x:.2f} m",
+            "  y(t) = v0 sinθ · t − 1/2 g t²",
+            f"  = ({v0:.2f})sin({theta_deg:.1f}°)×{t:.2f} − 0.5×{g:.2f}×{t:.2f}²",
+            f"  = {y:.2f} m",
+            "",
+            "Velocity",
+            "  vx(t) = v0 cosθ  (constant)",
+            f"  = {vx:.2f} m/s",
+            "  vy(t) = v0 sinθ − g t",
+            f"  = {vy:.2f} m/s",
+            f"  |v| = {speed:.2f} m/s",
+            "",
+            "Acceleration (gravity only)",
+            "  ax = 0 m/s²",
+            f"  ay = -g = {-g:.2f} m/s²",
+            "",
+            f"t = {t:.2f} s",
+        ]
+        update_equations_text(lines)
+
     # Store the current running state and the simulation time.
     running = {'on': False}
     sim = {'t': 0.0}
@@ -123,6 +163,11 @@ def open_kinematics_window(master=None):
         times.clear(); xs.clear(); vs.clear(); as_.clear()
         canvas.delete('all')
         graph_xt.delete('all'); graph_vt.delete('all'); graph_at.delete('all')
+        v0 = initial_speed.get()
+        theta_deg = angle_deg.get()
+        g = gravity.get()
+        theta = math.radians(theta_deg)
+        update_equations(0.0, v0, theta_deg, g, 0.0, 0.0, v0 * math.cos(theta), v0 * math.sin(theta))
 
     # Start the projectile motion animation.
     def start():
@@ -164,6 +209,8 @@ def open_kinematics_window(master=None):
         vy = v0 * math.sin(theta) - g * sim['t']
         a_x = 0.0
         a_y = -g
+
+        update_equations(sim['t'], v0, angle_deg.get(), g, x, y, vx, vy)
 
         # record for graphs (use magnitude for v and a)
         times.append(sim['t'])
@@ -271,3 +318,4 @@ def open_kinematics_window(master=None):
     ttk.Label(controls, wraplength=220, text="This demo shows projectile motion and live plots of x(t), |v|(t), and |a|(t). Use sliders to change parameters.").pack()
 
     reset()
+    return win

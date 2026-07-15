@@ -4,6 +4,15 @@ import tkinter as tk
 from tkinter import ttk
 import math
 
+import viz_common
+
+# Animate at 60fps, but integrate physics in finer substeps so stiff
+# springs (high k, low mass) stay numerically stable and don't judder.
+FRAME_MS = 16
+FRAME_DT = FRAME_MS / 1000.0
+SUBSTEPS = 4
+
+
 # Energy visualization window for the mass-spring simulation.
 def open_energy_window(master=None):
     """Create the spring-mass demo window with controls, animation, and energy graphs."""
@@ -110,19 +119,75 @@ def open_energy_window(master=None):
             width = max(200, win.winfo_width() - 20)
         return max(40, int(width / 2))
 
-    equation_frame = ttk.Frame(frm, padding=8)
-    equation_frame.pack(fill=tk.X, padx=8, pady=(0, 6))
-    equation_frame['borderwidth'] = 1
-    equation_frame['relief'] = 'solid'
-
-    ttk.Label(equation_frame, text="Physics equations", font=(None, 10, 'bold')).pack(anchor='w')
-    ttk.Label(equation_frame, text="Hooke's law: F = -k x  → the spring pulls back with a force proportional to displacement.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
-    ttk.Label(equation_frame, text="Newton's 2nd law: F = m a  → the force causes the mass to accelerate.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
-    ttk.Label(equation_frame, text="Elastic potential energy: U = 1/2 k x²  → energy stored in the stretched or compressed spring.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
-    ttk.Label(equation_frame, text="Kinetic energy: K = 1/2 m v²  → energy of motion as the mass moves.", justify=tk.LEFT, wraplength=720).pack(anchor='w', pady=(2, 0))
-
     help_text = ttk.Label(frm, text="The spring coil shows the mass stretching and compressing over time. The two curves below are energy traces: blue is kinetic energy and orange is potential energy stored in the spring.", wraplength=760, justify=tk.LEFT)
     help_text.pack(anchor='w', padx=8, pady=(4, 6))
+
+    # --- Small companion window showing the equations being demonstrated ---
+    EQ_W, EQ_H = 340, 480
+    eq_win, update_equations_text = viz_common.create_equations_panel(win, "Mass-Spring Demo", width=EQ_W, height=EQ_H)
+    win.protocol("WM_DELETE_WINDOW", lambda: (eq_win.destroy(), win.destroy()))
+
+    def _reposition_eq_panel():
+        # The main window maximizes shortly after creation, so "beside it"
+        # (computed at eq-panel-creation time) would be stale; pin it to the
+        # screen's top-right corner instead once the window has settled.
+        sw = win.winfo_screenwidth()
+        eq_win.geometry(f"{EQ_W}x{EQ_H}+{sw - EQ_W - 20}+40")
+    win.after(150, _reposition_eq_panel)
+
+    def update_equations(m, kk, g, damping, a, ke, pe_spring, pe_grav):
+        f_spring = -kk * state['x']
+        f_grav = m * g
+        f_damp = -damping * state['v']
+        lines = [
+            "Hooke's law (spring force)",
+            "  F_spring = -k x",
+            f"  = -({kk:.2f})({state['x']:.2f})",
+            f"  = {f_spring:.2f} N",
+            "",
+        ]
+        if gravity.get():
+            lines += [
+                "Gravity",
+                f"  F_gravity = mg = {f_grav:.2f} N",
+                "",
+            ]
+        if damping > 0:
+            lines += [
+                "Damping (resistive) force",
+                "  F_damping = -b v",
+                f"  = -({damping:.2f})({state['v']:.2f})",
+                f"  = {f_damp:.2f} N",
+                "",
+            ]
+        lines += [
+            "Newton's 2nd law",
+            "  ΣF = m a  →  a = ΣF / m",
+            f"  a = {a:.2f} m/s²",
+            "",
+            "Elastic potential energy",
+            "  U_spring = 1/2 k x²",
+            f"  = 0.5×{kk:.2f}×{state['x']:.2f}²",
+            f"  = {pe_spring:.2f} J",
+        ]
+        if gravity.get():
+            lines += [
+                "",
+                "Gravitational potential energy",
+                "  U_grav = mgx",
+                f"  = {pe_grav:.2f} J",
+            ]
+        lines += [
+            "",
+            "Kinetic energy",
+            "  K = 1/2 m v²",
+            f"  = 0.5×{m:.2f}×{state['v']:.2f}²",
+            f"  = {ke:.2f} J",
+            "",
+            "Total mechanical energy",
+            f"  E = U + K = {pe_spring + pe_grav + ke:.2f} J",
+        ]
+        update_equations_text(lines)
 
     # Create the energy graph canvas shown beneath the animation.
     graph = tk.Canvas(frm, bg='white', height=100)
@@ -209,6 +274,12 @@ def open_energy_window(master=None):
         energy_history['ke'].clear(); energy_history['pe'].clear(); energy_history['t'].clear()
         draw_scene()
         draw_energy_graph()
+        m = mass.get(); kk = k.get()
+        g = 9.81 if gravity.get() else 0.0
+        damping = b.get() if b.get() > 0 else 0.0
+        a0 = (-kk * state['x'] - damping * state['v'] + m * g) / m
+        pe_grav0 = m * 9.81 * state['x'] if gravity.get() else 0.0
+        update_equations(m, kk, g, damping, a0, 0.0, 0.5 * kk * state['x']**2, pe_grav0)
 
     # Advance the simulation by one time step and redraw the animation.
     def step():
@@ -216,14 +287,18 @@ def open_energy_window(master=None):
             return
 
         m = mass.get(); kk = k.get()
-        dt = 0.02
         g = 9.81 if gravity.get() else 0.0
         damping = b.get() if b.get() > 0 else 0.0
 
-        # acceleration: m a = -k x - b v + m g
-        a = (-kk * state['x'] - damping * state['v'] + m * g) / m
-        state['v'] += a * dt
-        state['x'] += state['v'] * dt
+        # Integrate in several finer substeps per rendered frame: keeps stiff
+        # springs (high k, low mass) numerically stable and the motion smooth
+        # instead of visibly juddering at high k/m ratios.
+        dt_sub = FRAME_DT / SUBSTEPS
+        a = 0.0
+        for _ in range(SUBSTEPS):
+            a = (-kk * state['x'] - damping * state['v'] + m * g) / m
+            state['v'] += a * dt_sub
+            state['x'] += state['v'] * dt_sub
 
         # check static equilibrium and possible deformation
         if gravity.get():
@@ -252,11 +327,12 @@ def open_energy_window(master=None):
         pe = pe_spring + pe_grav
         energy_history['ke'].append(ke)
         energy_history['pe'].append(pe)
-        energy_history['t'].append(len(energy_history['t'])*dt if energy_history['t'] else 0.0)
+        energy_history['t'].append(energy_history['t'][-1] + FRAME_DT if energy_history['t'] else 0.0)
 
+        update_equations(m, kk, g, damping, a, ke, pe_spring, pe_grav)
         draw_energy_graph()
         if state.get('running'):
-            win.after(int(dt*1000), step)
+            win.after(FRAME_MS, step)
 
     # Plot the kinetic and potential energy traces over time.
     def draw_energy_graph():
@@ -295,7 +371,7 @@ def open_energy_window(master=None):
         if not state.get('running'):
             state['running'] = True
             draw_scene()
-            win.after(20, step)
+            win.after(FRAME_MS, step)
 
     # Pause the simulation without resetting the current state.
     def stop():
@@ -320,3 +396,4 @@ def open_energy_window(master=None):
     b.trace_add('write', on_param_change)
 
     reset()
+    return win
